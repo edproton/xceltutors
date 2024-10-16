@@ -2,15 +2,17 @@ import { validateSchema } from "@/lib/utils/validationUtils";
 import { db } from "../db";
 import {
   userTable,
-  UserType,
   NewUser,
   CreateUserSchema,
   SelectUser,
   createUserSchema,
   UpdateUserSchema,
+  SelectUserSchema,
 } from "../db/schemas/userSchema";
 import bcrypt from "bcrypt";
 import DomainError from "./domainError";
+import { SelectSession, sessionTable } from "@/db/schemas/sessionSchema";
+import { invalidateAllUserSessions } from "./sessionService";
 
 export async function createUser(user: CreateUserSchema): Promise<void> {
   validateSchema(createUserSchema, user);
@@ -64,22 +66,6 @@ export async function updateUser(userData: UpdateUserSchema): Promise<void> {
     .execute();
 }
 
-export async function activateUser(userId: number): Promise<void> {
-  await db
-    .updateTable(userTable)
-    .set({ isActive: true })
-    .where("id", "=", userId)
-    .execute();
-}
-
-export async function deactivateUser(userId: number): Promise<void> {
-  await db
-    .updateTable(userTable)
-    .set({ isActive: false })
-    .where("id", "=", userId)
-    .execute();
-}
-
 export async function getUserById(id: number): Promise<SelectUser | undefined> {
   const existingUser = await db
     .selectFrom(userTable)
@@ -95,6 +81,17 @@ export async function getUserById(id: number): Promise<SelectUser | undefined> {
   return existingUser;
 }
 
-export async function getAllUsers(): Promise<SelectUser[]> {
+export async function getAllUsers(): Promise<SelectUserSchema[]> {
   return db.selectFrom(userTable).selectAll().orderBy("id").execute();
+}
+
+export async function getUserSessions(
+  userId: number
+): Promise<SelectSession[]> {
+  return db
+    .selectFrom(sessionTable)
+    .selectAll()
+    .where("userId", "=", userId)
+    .orderBy("expiresAt", "desc")
+    .execute();
 }

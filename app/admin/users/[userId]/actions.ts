@@ -1,8 +1,16 @@
 "use server";
 
-import { UpdateUserSchema, UserType } from "@/db/schemas/userSchema";
+import { UpdateUserSchema } from "@/db/schemas/userSchema";
 import { handleAction } from "@/lib/utils/actionUtils";
-import { getUserById, updateUser } from "@/services/userService";
+import {
+  invalidateAllUserSessions,
+  invalidateSession,
+} from "@/services/sessionService";
+import {
+  getUserById,
+  getUserSessions,
+  updateUser,
+} from "@/services/userService";
 
 export const getUserByIdAction = (userId: number) =>
   handleAction({
@@ -20,5 +28,28 @@ export const updateUserAction = (userData: UpdateUserSchema) =>
     onSuccess: () => ({
       message: "User updated successfully",
       revalidatePath: "/admin/users",
+    }),
+  });
+
+export const getUserSessionsAction = (userId: number) =>
+  handleAction({
+    handler: () => getUserSessions(userId),
+  });
+
+export const invalidateUserSessionAction = (sessionId: string) =>
+  handleAction({
+    handler: () => invalidateSession(sessionId),
+    onSuccess: () => ({
+      message: "Session invalidated successfully",
+      revalidatePath: "/admin/users/[userId]",
+    }),
+  });
+
+export const invalidateAllSessionsAction = (userId: number) =>
+  handleAction({
+    handler: () => invalidateAllUserSessions(userId),
+    onSuccess: () => ({
+      message: "All sessions invalidated successfully",
+      revalidatePath: "/admin/users/[userId]",
     }),
   });

@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { Generated, Insertable, Selectable } from "kysely";
 
+export const userTable = "user";
+
 export enum UserType {
   tutor = "tutor",
   student = "student",
@@ -15,10 +17,9 @@ export interface UserTable {
 }
 
 export type NewUser = Insertable<UserTable>;
-export type SelectUser = Selectable<UserTable>;
+export type SelectUser = Selectable<Omit<UserTable, "password">>;
 
-export const userTable = "user";
-
+// DTOs
 const userTypeSchema = z.nativeEnum(UserType);
 export const userSchema = z.object({
   id: z.number(),

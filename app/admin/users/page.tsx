@@ -58,7 +58,6 @@ export default function UserManagement() {
   const [globalFilter, setGlobalFilter] = useState("");
   const router = useRouter();
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const queryClient = useQueryClient();
 
   const { data: users = [], isLoading: isInitialLoading } = useQuery<
     SelectUserSchema[]
