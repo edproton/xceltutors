@@ -6,6 +6,8 @@ export interface SessionTable {
   id: string;
   userId: number;
   expiresAt: Date;
+  userAgent: string;
+  ipAddress: string;
 }
 
 export type NewSession = Insertable<SessionTable>;

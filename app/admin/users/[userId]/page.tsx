@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,21 +18,15 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
-import {
-  updateUserAction,
-  getUserByIdAction,
-  getUserSessionsAction,
-  invalidateUserSessionAction,
-  invalidateAllSessionsAction,
-} from "./actions";
+import { updateUserAction, getUserByIdAction } from "./actions";
 import {
   updateUserSchema,
   UpdateUserSchema,
   UserType,
 } from "@/db/schemas/userSchema";
 import { Loader2 } from "lucide-react";
-import { SelectSession } from "@/db/schemas/sessionSchema";
 import React from "react";
+import UserSessionsTable from "./UserSessionsTable";
 
 export default function UpdateUserForm({
   params,
@@ -42,7 +36,6 @@ export default function UpdateUserForm({
   const router = useRouter();
   const searchParams = useSearchParams();
   const backToPage = searchParams.get("backToPage");
-  const queryClient = useQueryClient();
 
   const {
     data: user,
@@ -59,25 +52,8 @@ export default function UpdateUserForm({
     values: user,
   });
 
-  const {
-    data: sessions = [],
-    isLoading: isSessionsLoading,
-    isError: isSessionsError,
-  } = useQuery({
-    queryKey: ["userSessions", params.userId],
-    queryFn: () => getUserSessionsAction(params.userId),
-  });
-
   const updateUserMutation = useMutation({
     mutationFn: updateUserAction,
-  });
-
-  const invalidateSessionMutation = useMutation({
-    mutationFn: invalidateUserSessionAction,
-  });
-
-  const invalidateAllSessionsMutation = useMutation({
-    mutationFn: () => invalidateAllSessionsAction(params.userId),
   });
 
   if (updateUserMutation.isSuccess) {
@@ -98,60 +74,11 @@ export default function UpdateUserForm({
     });
   }
 
-  if (invalidateSessionMutation.isSuccess) {
-    toast({
-      title: "Session Invalidated",
-      description: "User session has been invalidated successfully",
-    });
-    queryClient.setQueryData<SelectSession[]>(
-      ["userSessions", params.userId],
-      (oldData) =>
-        oldData?.filter(
-          (session) => session.id !== invalidateSessionMutation.variables
-        ) || []
-    );
-  }
-
-  if (invalidateSessionMutation.isError) {
-    toast({
-      title: "Error",
-      description: invalidateSessionMutation.error.message,
-      variant: "destructive",
-    });
-  }
-
-  if (invalidateAllSessionsMutation.isSuccess) {
-    toast({
-      title: "All Sessions Invalidated",
-      description: "All user sessions have been invalidated successfully",
-    });
-    queryClient.setQueryData<SelectSession[]>(
-      ["userSessions", params.userId],
-      []
-    );
-  }
-
-  if (invalidateAllSessionsMutation.isError) {
-    toast({
-      title: "Error",
-      description: invalidateAllSessionsMutation.error.message,
-      variant: "destructive",
-    });
-  }
-
   function onSubmit(data: UpdateUserSchema) {
     updateUserMutation.mutate(data);
   }
 
-  function handleInvalidateSession(sessionId: string) {
-    invalidateSessionMutation.mutate(sessionId);
-  }
-
-  function handleInvalidateAllSessions() {
-    invalidateAllSessionsMutation.mutate();
-  }
-
-  if (isUserLoading || isSessionsLoading) {
+  if (isUserLoading) {
     return (
       <div className="flex justify-center items-center">
         <Loader2 className="h-6 w-4 animate-spin" />
@@ -167,14 +94,6 @@ export default function UpdateUserForm({
     });
     router.push("/admin/users");
     return null;
-  }
-
-  if (isSessionsError) {
-    toast({
-      title: "Error",
-      description: "Failed to load user sessions",
-      variant: "destructive",
-    });
   }
 
   if (!user) {
@@ -251,39 +170,7 @@ export default function UpdateUserForm({
           {/* User sessions section */}
           <div className="space-y-2">
             <Label>User Sessions</Label>
-            {sessions.length > 0 ? (
-              <ul className="space-y-2">
-                {sessions.map((session) => (
-                  <li
-                    key={session.id}
-                    className="flex justify-between items-center"
-                  >
-                    <span>
-                      Expires: {new Date(session.expiresAt).toLocaleString()}
-                    </span>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleInvalidateSession(session.id)}
-                      disabled={invalidateSessionMutation.isPending}
-                    >
-                      Invalidate
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p>No active sessions</p>
-            )}
-            <Button
-              variant="outline"
-              onClick={handleInvalidateAllSessions}
-              disabled={
-                sessions.length === 0 || invalidateAllSessionsMutation.isPending
-              }
-            >
-              Invalidate All Sessions
-            </Button>
+            <UserSessionsTable userId={params.userId} />
           </div>
         </CardContent>
         <CardFooter>

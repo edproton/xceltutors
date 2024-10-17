@@ -1,21 +1,11 @@
 import { db } from "@/db";
-import { createUser } from "./userService";
-import { createSession, generateSessionToken } from "./sessionService";
 import { CreateUserSchema, UserType } from "@/db/schemas/userSchema";
 import { SelectSession } from "@/db/schemas/sessionSchema";
 import bcrypt from "bcrypt";
-import DomainError from "./domainError";
-
-export interface SignUpParams {
-  email: string;
-  password: string;
-  type: UserType;
-}
-
-export interface SignInParams {
-  email: string;
-  password: string;
-}
+import { SignUpSchema, SignInSchema } from "./authServiceSchemas";
+import DomainError from "../domainError";
+import { createSession, generateSessionToken } from "../sessionService";
+import { createUser } from "../userService";
 
 export interface AuthResult {
   user: {
@@ -27,19 +17,13 @@ export interface AuthResult {
   token: string;
 }
 
-export async function signUp({
-  email,
-  password,
-  type,
-}: SignUpParams): Promise<AuthResult> {
+export async function signUp({ email, password, type }: SignUpSchema) {
   const newUser: CreateUserSchema = {
     email,
     password,
     type,
     isActive: false,
   };
-
-  console.log(newUser);
 
   await createUser(newUser);
 
@@ -49,20 +33,15 @@ export async function signUp({
     .where("email", "=", email)
     .executeTakeFirstOrThrow();
 
-  const token = generateSessionToken();
-  const session = await createSession(token, user.id);
-
-  return {
-    user,
-    session,
-    token,
-  };
+  // TODO: send confirmation email
 }
 
 export async function signIn({
   email,
   password,
-}: SignInParams): Promise<AuthResult> {
+  ipAddress,
+  userAgent,
+}: SignInSchema): Promise<AuthResult> {
   const user = await db
     .selectFrom("user")
     .select(["id", "email", "password", "type", "isActive"])
@@ -83,7 +62,7 @@ export async function signIn({
   }
 
   const token = generateSessionToken();
-  const session = await createSession(token, user.id);
+  const session = await createSession(token, user.id, userAgent, ipAddress);
 
   return {
     user: {

@@ -1,7 +1,6 @@
 "use server";
 
 import { UpdateUserSchema } from "@/db/schemas/userSchema";
-import { handleAction } from "@/lib/utils/actionUtils";
 import {
   invalidateAllUserSessions,
   invalidateSession,

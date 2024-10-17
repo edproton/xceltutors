@@ -21,7 +21,9 @@ export function generateSessionToken(): string {
 
 export async function createSession(
   token: string,
-  userId: number
+  userId: number,
+  userAgent: string,
+  ipAddress: string
 ): Promise<SelectSession> {
   const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
@@ -30,6 +32,8 @@ export async function createSession(
     id: sessionId,
     userId: userId,
     expiresAt: expiresAt,
+    userAgent: userAgent,
+    ipAddress: ipAddress,
   };
 
   await db.insertInto(sessionTable).values(newSession).execute();
@@ -53,6 +57,8 @@ export async function validateSessionToken(
       "session.id",
       "session.userId",
       "session.expiresAt",
+      "session.userAgent",
+      "session.ipAddress",
       "user.id as userId",
       "user.email",
       "user.type",
@@ -70,6 +76,8 @@ export async function validateSessionToken(
     id: result.id,
     userId: result.userId,
     expiresAt: result.expiresAt,
+    userAgent: result.userAgent,
+    ipAddress: result.ipAddress,
   };
 
   const user: SelectUser = {

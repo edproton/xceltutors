@@ -4,7 +4,6 @@ import {
   userTable,
   NewUser,
   CreateUserSchema,
-  SelectUser,
   createUserSchema,
   UpdateUserSchema,
   SelectUserSchema,
@@ -12,7 +11,6 @@ import {
 import bcrypt from "bcrypt";
 import DomainError from "./domainError";
 import { SelectSession, sessionTable } from "@/db/schemas/sessionSchema";
-import { invalidateAllUserSessions } from "./sessionService";
 
 export async function createUser(user: CreateUserSchema): Promise<void> {
   validateSchema(createUserSchema, user);
