@@ -52,37 +52,45 @@ export async function updateUser(userData: UpdateUserSchema): Promise<void> {
     throw new DomainError("User with this email already exists");
   }
 
-  const hashedPassword = await bcrypt.hash(userData.password, 10);
+  const updateObject: Partial<UpdateUserSchema> = {
+    email: userData.email,
+    type: userData.type,
+    isActive: userData.isActive,
+  };
+
+  if (userData.password) {
+    const hashedPassword = await bcrypt.hash(userData.password, 10);
+    updateObject.password = hashedPassword;
+  }
 
   await db
     .updateTable(userTable)
-    .set({
-      email: userData.email,
-      type: userData.type,
-      isActive: userData.isActive,
-      password: hashedPassword,
-    })
+    .set(updateObject)
     .where("id", "=", userData.id)
     .execute();
 }
 
-export async function getUserById(id: number): Promise<SelectUser | undefined> {
+export async function getUserById(id: number): Promise<SelectUserSchema> {
   const existingUser = await db
     .selectFrom(userTable)
-    .selectAll()
+    .select(["id", "email", "type", "isActive"])
     .where("id", "=", id)
     .limit(1)
     .executeTakeFirst();
 
   if (!existingUser) {
-    throw new DomainError("User with this email already exists");
+    throw new DomainError("User not found");
   }
 
   return existingUser;
 }
 
 export async function getAllUsers(): Promise<SelectUserSchema[]> {
-  return db.selectFrom(userTable).selectAll().orderBy("id").execute();
+  return db
+    .selectFrom(userTable)
+    .select(["id", "email", "type", "isActive"])
+    .orderBy("id")
+    .execute();
 }
 
 export async function getUserSessions(

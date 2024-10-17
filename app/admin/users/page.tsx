@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useRef, useMemo, useCallback, useEffect } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   flexRender,
   getCoreRowModel,
@@ -12,8 +12,9 @@ import {
   ColumnDef,
   ColumnFiltersState,
   SortingState,
+  PaginationState,
 } from "@tanstack/react-table";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -56,7 +57,13 @@ export default function UserManagement() {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  });
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const { data: users = [], isLoading: isInitialLoading } = useQuery<
@@ -73,7 +80,6 @@ export default function UserManagement() {
           description: "Failed to load users.",
           variant: "destructive",
         });
-
         return [];
       }
     },
@@ -85,6 +91,17 @@ export default function UserManagement() {
       searchInputRef.current.focus();
     }
   };
+
+  const navigateToEditPage = useCallback(
+    (userId: string) => {
+      router.push(`/admin/users/${userId}?backToPage=${pagination.pageIndex}`);
+    },
+    [pagination.pageIndex, router]
+  );
+
+  const navigateToCreatePage = useCallback(() => {
+    router.push(`/admin/users/create?backToPage=${pagination.pageIndex}`);
+  }, [pagination.pageIndex, router]);
 
   const columns: ColumnDef<SelectUserSchema>[] = useMemo(
     () => [
@@ -192,7 +209,7 @@ export default function UserManagement() {
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                 <DropdownMenuItem
-                  onClick={() => router.push(`/admin/users/${user.id}`)}
+                  onClick={() => navigateToEditPage(user.id.toString())}
                 >
                   Edit
                 </DropdownMenuItem>
@@ -203,10 +220,11 @@ export default function UserManagement() {
         },
       },
     ],
-    [router]
+    [navigateToEditPage]
   );
 
   const table = useReactTable({
+    autoResetPageIndex: false,
     data: users,
     columns,
     getCoreRowModel: getCoreRowModel(),
@@ -216,12 +234,49 @@ export default function UserManagement() {
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
+    onPaginationChange: setPagination,
     state: {
       sorting,
       columnFilters,
       globalFilter,
+      pagination,
     },
   });
+
+  useEffect(() => {
+    const handlePagination = () => {
+      const pageParam = searchParams.get("page");
+      const backToPageParam = searchParams.get("backToPage");
+
+      let newPageIndex: number | null = null;
+
+      if (pageParam) {
+        newPageIndex = parseInt(pageParam, 10);
+      } else if (backToPageParam) {
+        newPageIndex = parseInt(backToPageParam, 10);
+      }
+
+      if (newPageIndex !== null && !isNaN(newPageIndex) && newPageIndex >= 0) {
+        table.setPageIndex(newPageIndex);
+      }
+    };
+
+    handlePagination();
+
+    // Add event listener for popstate (browser back/forward)
+    window.addEventListener("popstate", handlePagination);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener("popstate", handlePagination);
+    };
+  }, [searchParams, table.setPageIndex]);
+
+  useEffect(() => {
+    const currentParams = new URLSearchParams(searchParams.toString());
+    currentParams.set("page", pagination.pageIndex.toString());
+    router.push(`${pathname}?${currentParams.toString()}`, { scroll: false });
+  }, [pagination.pageIndex, pathname, router, searchParams]);
 
   return (
     <Card>
@@ -230,7 +285,7 @@ export default function UserManagement() {
           <CardTitle>User List</CardTitle>
           <CardDescription>Manage existing users</CardDescription>
         </div>
-        <Button onClick={() => router.push("/admin/users/create")}>
+        <Button onClick={navigateToCreatePage}>
           <Plus className="mr-2 h-4 w-4" /> Create User
         </Button>
       </CardHeader>

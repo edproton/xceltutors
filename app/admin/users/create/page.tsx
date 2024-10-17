@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -28,7 +28,8 @@ import { Loader2 } from "lucide-react";
 
 export default function CreateUserForm() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const searchParams = useSearchParams();
+  const backToPage = searchParams.get("backToPage");
 
   const form = useForm<CreateUserSchema>({
     resolver: zodResolver(createUserSchema),
@@ -40,26 +41,30 @@ export default function CreateUserForm() {
     },
   });
 
-  async function onSubmit(data: CreateUserSchema) {
-    setIsLoading(true);
+  const createUserMutation = useMutation({
+    mutationFn: createUserAction,
+  });
 
-    const result = await createUserAction(data);
-    if (result.success) {
-      toast({
-        title: "User Created",
-        description: result.message,
-      });
+  if (createUserMutation.isSuccess) {
+    toast({
+      title: "User Created",
+      description: "User created sucessfully",
+    });
+    router.push(
+      backToPage ? `/admin/users?backToPage=${backToPage}` : "/admin/users"
+    );
+  }
 
-      router.push("/admin/users");
-    } else {
-      toast({
-        title: "Error",
-        description: result.message,
-        variant: "destructive",
-      });
-    }
+  if (createUserMutation.isError) {
+    toast({
+      title: "Error",
+      description: createUserMutation.error.message,
+      variant: "destructive",
+    });
+  }
 
-    setIsLoading(false);
+  function onSubmit(data: CreateUserSchema) {
+    createUserMutation.mutate(data);
   }
 
   return (
@@ -128,8 +133,12 @@ export default function CreateUserForm() {
           </div>
         </CardContent>
         <CardFooter>
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? (
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={createUserMutation.isPending}
+          >
+            {createUserMutation.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               "Create User"
