@@ -40,7 +40,7 @@ export default function AuthForm() {
 
   const signUpMutation = useMutation({
     mutationFn: signUpAction,
-    onError(error, _, __) {
+    onError(error) {
       toast({
         title: "Error",
         variant: "destructive",

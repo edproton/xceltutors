@@ -9,7 +9,7 @@ import {
   SelectUserSchema,
 } from "../db/schemas/userSchema";
 import bcrypt from "bcrypt";
-import DomainError from "./domainError";
+import { DomainError, Errors } from "./domainError";
 import { SelectSession, sessionTable } from "@/db/schemas/sessionSchema";
 
 export async function createUser(user: CreateUserSchema): Promise<void> {
@@ -23,7 +23,7 @@ export async function createUser(user: CreateUserSchema): Promise<void> {
     .executeTakeFirst();
 
   if (existingUser) {
-    throw new DomainError("User with this email already exists");
+    throw new DomainError(Errors.User.EmailAlreadyExists);
   }
 
   const hashedPassword = await bcrypt.hash(user.password, 10);
@@ -47,7 +47,7 @@ export async function updateUser(userData: UpdateUserSchema): Promise<void> {
     .executeTakeFirst();
 
   if (emailAlreadyAssigned && emailAlreadyAssigned.id !== userData.id) {
-    throw new DomainError("User with this email already exists");
+    throw new DomainError(Errors.User.EmailAlreadyExists);
   }
 
   const updateObject: Partial<UpdateUserSchema> = {
@@ -77,7 +77,7 @@ export async function getUserById(id: number): Promise<SelectUserSchema> {
     .executeTakeFirst();
 
   if (!existingUser) {
-    throw new DomainError("User not found");
+    throw new DomainError(Errors.User.NotFound);
   }
 
   return existingUser;

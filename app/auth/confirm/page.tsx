@@ -1,8 +1,6 @@
 "use client";
-
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -11,35 +9,43 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Mail, CheckCircle, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Mail,
+  CheckCircle,
+  Sparkles,
+  Loader2,
+  AlertTriangle,
+} from "lucide-react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { confirmEmailAction } from "./actions";
 import { useMutation } from "@tanstack/react-query";
+import { Errors } from "@/services/domainError";
 
-interface ConfirmEmailPageProps {
-  userId: string;
-  userEmail: string;
-}
-
-async function confirmEmail(userId: string): Promise<boolean> {
-  // Simulating an API call
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-  // In a real scenario, you'd make an API call here
-  // return await api.post(`/users/${userId}/confirm-email`)
-  return true;
-}
-
-export default function ConfirmEmailPage({
-  userId,
-  userEmail,
-}: ConfirmEmailPageProps) {
+export default function ConfirmEmailPage() {
   const [showWelcome, setShowWelcome] = useState(false);
   const [countdown, setCountdown] = useState(3);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const token = searchParams.get("token");
 
   const confirmEmailMutation = useMutation({
-    mutationFn: () => confirmEmail(userId),
+    mutationFn: () => confirmEmailAction(token || ""),
     onSuccess: () => {
-      setTimeout(() => setShowWelcome(true), 2000);
+      setShowWelcome(true);
+    },
+    onError: (e: Error) => {
+      if (e.message === Errors.User.AlreadyConfirmed) {
+        router.push("/dashboard");
+      }
     },
   });
+
+  useEffect(() => {
+    if (token) {
+      confirmEmailMutation.mutate();
+    }
+  }, [token]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -51,27 +57,28 @@ export default function ConfirmEmailPage({
 
   useEffect(() => {
     if (countdown === 0) {
-      console.log("Redirecting...");
-      // window.location.href = "/dashboard" // Uncomment this line to actually redirect
+      router.push("/dashboard");
     }
-  }, [countdown]);
+  }, [countdown, router]);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {!showWelcome ? (
           <motion.div
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            key="confirming"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.5 }}
           >
             <Card className="w-[350px]">
               <CardHeader>
                 <CardTitle className="text-2xl font-bold text-center">
-                  Check Your Email
+                  Confirming Your Email
                 </CardTitle>
                 <CardDescription className="text-center">
-                  We've sent you a confirmation link
+                  {"We're verifying your email address"}
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col items-center space-y-4">
@@ -82,68 +89,43 @@ export default function ConfirmEmailPage({
                   <Mail className="w-10 h-10 text-primary" />
                 </div>
                 <p className="text-center text-sm text-muted-foreground">
-                  Please check your email inbox for <strong>{userEmail}</strong>{" "}
-                  and click on the provided link to confirm your account.
+                  Please wait while we confirm your email address. This should
+                  only take a moment.
                 </p>
-                {!confirmEmailMutation.isSuccess && (
-                  <div className="w-full h-2 bg-secondary overflow-hidden rounded-full">
-                    <motion.div
-                      className="h-full bg-primary"
-                      initial={{ x: "-100%" }}
-                      animate={{ x: "100%" }}
-                      transition={{
-                        repeat: Infinity,
-                        repeatType: "loop",
-                        duration: 1,
-                        ease: "linear",
-                      }}
-                    />
+                {confirmEmailMutation.isPending && (
+                  <div className="flex items-center space-x-2">
+                    <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                    <span className="text-sm text-muted-foreground">
+                      Verifying...
+                    </span>
                   </div>
-                )}
-                {(confirmEmailMutation.isPending ||
-                  confirmEmailMutation.isIdle) && (
-                  <p className="text-xs text-center text-muted-foreground">
-                    Waiting for confirmation...
-                  </p>
                 )}
               </CardContent>
               <CardFooter className="flex flex-col space-y-2">
                 {confirmEmailMutation.isError && (
-                  <p className="text-red-500 text-sm">
-                    Failed to confirm email. Please try again.
-                  </p>
-                )}
-                {confirmEmailMutation.isSuccess ? (
-                  <div className="flex items-center justify-center space-x-2 text-green-600">
-                    <CheckCircle className="w-5 h-5" />
-                    <span>Email confirmed successfully!</span>
+                  <div className="flex flex-col items-center space-y-2">
+                    <AlertTriangle className="w-6 h-6 text-destructive" />
+                    <p className="text-destructive text-sm text-center">
+                      {confirmEmailMutation.error.message !==
+                        Errors.User.NotConfirmed}
+                    </p>
+                    <Button
+                      variant="outline"
+                      onClick={() => confirmEmailMutation.mutate()}
+                      className="mt-2"
+                    >
+                      Retry
+                    </Button>
                   </div>
-                ) : (
-                  <Button
-                    className="w-full"
-                    variant="outline"
-                    onClick={() => confirmEmailMutation.mutate()}
-                    disabled={confirmEmailMutation.isPending}
-                  >
-                    {confirmEmailMutation.isPending
-                      ? "Confirming..."
-                      : "Confirm Email"}
-                  </Button>
                 )}
-                <p className="text-xs text-center text-muted-foreground">
-                  Didn't receive an email? Check your spam folder or{" "}
-                  <a href="#" className="text-primary hover:underline">
-                    request a new one
-                  </a>
-                  .
-                </p>
               </CardFooter>
             </Card>
           </motion.div>
         ) : (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            key="welcome"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5 }}
           >
             <Card className="w-[350px]">
@@ -153,6 +135,15 @@ export default function ConfirmEmailPage({
                 </CardTitle>
                 <CardDescription className="text-center">
                   Your journey to excellence begins now
+                  <motion.div
+                    className="flex items-center justify-center space-x-2 text-green-600 mt-2"
+                    initial={{ y: 10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    <CheckCircle className="w-5 h-5" />
+                    <span>Email confirmed successfully!</span>
+                  </motion.div>
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col items-center space-y-4">
@@ -163,9 +154,9 @@ export default function ConfirmEmailPage({
                   <Sparkles className="w-10 h-10 text-primary" />
                 </div>
                 <p className="text-center text-sm text-muted-foreground">
-                  We're excited to have you on board! Get ready to unlock your
-                  full potential with our expert tutors and personalized
-                  learning experiences.
+                  {
+                    "We're excited to have you on board! Get ready to unlock your full potential with our expert tutors and personalized learning experiences."
+                  }
                 </p>
                 <p className="text-lg font-semibold text-primary">
                   {countdown > 0
@@ -177,8 +168,11 @@ export default function ConfirmEmailPage({
                 <p className="text-xs text-center text-muted-foreground">
                   {countdown === 0 ? (
                     <>
-                      If you weren't redirected automatically,{" "}
-                      <a href="#" className="text-primary hover:underline">
+                      {"If you weren't redirected automatically, "}
+                      <a
+                        href="/dashboard"
+                        className="text-primary hover:underline"
+                      >
                         click here to access your dashboard
                       </a>
                       .

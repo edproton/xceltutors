@@ -1,5 +1,5 @@
 // actionUtils.ts
-import DomainError from "@/services/domainError";
+import { DomainError } from "@/services/domainError";
 import { revalidatePath } from "next/cache";
 import { ZodError } from "zod";
 

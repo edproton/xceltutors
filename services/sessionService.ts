@@ -3,7 +3,7 @@ import {
   encodeHexLowerCase,
 } from "@oslojs/encoding";
 import { sha256 } from "@oslojs/crypto/sha2";
-import DomainError from "../services/domainError";
+import { DomainError } from "../services/domainError";
 import { db } from "@/db";
 import { SelectUser, userTable } from "@/db/schemas/userSchema";
 import {

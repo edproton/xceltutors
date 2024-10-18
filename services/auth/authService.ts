@@ -3,9 +3,11 @@ import { CreateUserSchema, UserType } from "@/db/schemas/userSchema";
 import { SelectSession } from "@/db/schemas/sessionSchema";
 import bcrypt from "bcrypt";
 import { SignUpSchema, SignInSchema } from "./authServiceSchemas";
-import DomainError from "../domainError";
 import { createSession, generateSessionToken } from "../sessionService";
 import { createUser } from "../userService";
+import { sendConfirmationEmail } from "../email/emailService";
+import { generateVerificationToken, verifyToken } from "../token/tokenService";
+import { DomainError, Errors } from "../domainError";
 
 export interface AuthResult {
   user: {
@@ -15,6 +17,32 @@ export interface AuthResult {
   };
   session: SelectSession;
   token: string;
+}
+
+export async function confirmEmail(token: string) {
+  const { userId, email } = await verifyToken(token);
+
+  const existingUser = await db
+    .selectFrom("user")
+    .selectAll()
+    .where("id", "=", userId)
+    .where("email", "=", email)
+    .executeTakeFirst();
+
+  if (!existingUser) {
+    throw new DomainError(Errors.User.NotFound);
+  }
+
+  if (existingUser.isActive) {
+    throw new DomainError(Errors.User.AlreadyConfirmed);
+  }
+
+  await db
+    .updateTable("user")
+    .set({ isActive: true })
+    .where("id", "=", userId)
+    .where("email", "=", email)
+    .execute();
 }
 
 export async function signUp({ email, password, type }: SignUpSchema) {
@@ -33,7 +61,12 @@ export async function signUp({ email, password, type }: SignUpSchema) {
     .where("email", "=", email)
     .executeTakeFirstOrThrow();
 
-  // TODO: send confirmation email
+  const verificationToken = await generateVerificationToken({
+    userId: user.id,
+    email: user.email,
+  });
+
+  await sendConfirmationEmail(user.email, verificationToken);
 }
 
 export async function signIn({
@@ -49,16 +82,16 @@ export async function signIn({
     .executeTakeFirst();
 
   if (!user) {
-    throw new DomainError("Invalid email or password");
+    throw new DomainError(Errors.Auth.InvalidCredentials);
   }
 
   const isPasswordValid = await bcrypt.compare(password, user.password);
   if (!isPasswordValid) {
-    throw new DomainError("Invalid email or password");
+    throw new DomainError(Errors.Auth.InvalidCredentials);
   }
 
   if (!user.isActive) {
-    throw new DomainError("User account is not active");
+    throw new DomainError(Errors.User.NotConfirmed);
   }
 
   const token = generateSessionToken();
@@ -76,5 +109,13 @@ export async function signIn({
 }
 
 export async function signOut(sessionId: string): Promise<void> {
+  const result = await db
+    .deleteFrom("session")
+    .where("id", "=", sessionId)
+    .executeTakeFirst();
+
+  if (result.numDeletedRows === 0n) {
+    throw new DomainError(Errors.Data.NotFound);
+  }
   await db.deleteFrom("session").where("id", "=", sessionId).execute();
 }
