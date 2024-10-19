@@ -31,7 +31,6 @@ export async function createUser(user: CreateUserSchema): Promise<void> {
   const newUser: NewUser = {
     email: user.email,
     password: hashedPassword,
-    type: user.type,
     isActive: user.isActive,
   };
 

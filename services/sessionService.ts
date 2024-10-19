@@ -3,9 +3,9 @@ import {
   encodeHexLowerCase,
 } from "@oslojs/encoding";
 import { sha256 } from "@oslojs/crypto/sha2";
-import { DomainError } from "../services/domainError";
+import { DomainError, Errors } from "../services/domainError";
 import { db } from "@/db";
-import { SelectUser, userTable } from "@/db/schemas/userSchema";
+import { userTable } from "@/db/schemas/userSchema";
 import {
   SelectSession,
   sessionTable,
@@ -42,8 +42,8 @@ export async function createSession(
 }
 
 export type SessionValidationResult =
-  | { session: SelectSession; user: SelectUser }
-  | { session: null; user: null };
+  | { session: SelectSession; userId: number }
+  | { session: null; userId: null };
 
 export async function validateSessionToken(
   token: string
@@ -60,16 +60,13 @@ export async function validateSessionToken(
       "session.userAgent",
       "session.ipAddress",
       "user.id as userId",
-      "user.email",
-      "user.type",
-      "user.isActive",
-      "user.password",
+      "user.isActive as userIsActive",
     ])
     .where("session.id", "=", sessionId)
     .executeTakeFirst();
 
   if (!result) {
-    return { session: null, user: null };
+    throw new DomainError(Errors.Auth.InvalidSession);
   }
 
   const session: SelectSession = {
@@ -80,19 +77,13 @@ export async function validateSessionToken(
     ipAddress: result.ipAddress,
   };
 
-  const user: SelectUser = {
-    id: result.userId,
-    email: result.email,
-    type: result.type,
-    isActive: result.isActive,
-  };
-
   if (Date.now() >= session.expiresAt.getTime()) {
     await invalidateSession(session.id);
-    return { session: null, user: null };
+
+    throw new DomainError(Errors.Auth.SessionExpired);
   }
 
-  if (!user.isActive) {
+  if (!result.userIsActive) {
     await invalidateSession(session.id);
     throw new DomainError("User account is not active");
   }
@@ -109,7 +100,7 @@ export async function validateSessionToken(
     session.expiresAt = newExpiresAt;
   }
 
-  return { session, user };
+  return { session, userId: result.userId };
 }
 
 export async function invalidateSession(sessionId: string): Promise<void> {

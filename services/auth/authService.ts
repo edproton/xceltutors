@@ -1,6 +1,5 @@
 import { db } from "@/db";
-import { CreateUserSchema, UserType } from "@/db/schemas/userSchema";
-import { SelectSession } from "@/db/schemas/sessionSchema";
+import { CreateUserSchema } from "@/db/schemas/userSchema";
 import bcrypt from "bcrypt";
 import { SignUpSchema, SignInSchema } from "./authServiceSchemas";
 import { createSession, generateSessionToken } from "../sessionService";
@@ -10,13 +9,8 @@ import { generateVerificationToken, verifyToken } from "../token/tokenService";
 import { DomainError, Errors } from "../domainError";
 
 export interface AuthResult {
-  user: {
-    id: number;
-    email: string;
-    type: UserType;
-  };
-  session: SelectSession;
   token: string;
+  expiresAt: Date;
 }
 
 export async function confirmEmail(token: string) {
@@ -45,11 +39,10 @@ export async function confirmEmail(token: string) {
     .execute();
 }
 
-export async function signUp({ email, password, type }: SignUpSchema) {
+export async function signUp({ email, password }: SignUpSchema) {
   const newUser: CreateUserSchema = {
     email,
     password,
-    type,
     isActive: false,
   };
 
@@ -98,24 +91,7 @@ export async function signIn({
   const session = await createSession(token, user.id, userAgent, ipAddress);
 
   return {
-    user: {
-      id: user.id,
-      email: user.email,
-      type: user.type,
-    },
-    session,
     token,
+    expiresAt: session.expiresAt,
   };
-}
-
-export async function signOut(sessionId: string): Promise<void> {
-  const result = await db
-    .deleteFrom("session")
-    .where("id", "=", sessionId)
-    .executeTakeFirst();
-
-  if (result.numDeletedRows === 0n) {
-    throw new DomainError(Errors.Data.NotFound);
-  }
-  await db.deleteFrom("session").where("id", "=", sessionId).execute();
 }

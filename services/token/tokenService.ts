@@ -21,10 +21,8 @@ export async function generateVerificationToken(
 }
 
 export async function verifyToken(token: string): Promise<TokenPayload> {
-  try {
-    const { payload } = await jwtVerify(token, secretKey);
-    return payload as TokenPayload;
-  } catch (error) {
-    throw new Error("Invalid or expired token");
-  }
+  const { payload } = await jwtVerify(token, secretKey);
+
+  // TODO: Fix this type casting
+  return payload as unknown as TokenPayload;
 }

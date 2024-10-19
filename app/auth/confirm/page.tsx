@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -106,8 +107,7 @@ export default function ConfirmEmailPage() {
                   <div className="flex flex-col items-center space-y-2">
                     <AlertTriangle className="w-6 h-6 text-destructive" />
                     <p className="text-destructive text-sm text-center">
-                      {confirmEmailMutation.error.message !==
-                        Errors.User.NotConfirmed}
+                      {confirmEmailMutation.error.message}
                     </p>
                     <Button
                       variant="outline"

@@ -1,7 +1,5 @@
 import { z } from "zod";
-import { passwordSchema, UserType } from "@/db/schemas/userSchema";
-
-const userTypeSchema = z.nativeEnum(UserType);
+import { passwordSchema } from "@/db/schemas/userSchema";
 
 const emailSchema = z
   .string()
@@ -12,7 +10,6 @@ export type SignUpSchema = z.infer<typeof signUpSchema>;
 export const signUpSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
-  type: userTypeSchema,
   ipAddress: z.string(),
   userAgent: z.string(),
 });
@@ -37,4 +34,10 @@ export const signInSchema = z.object({
   password: passwordSchema,
   userAgent: z.string(),
   ipAddress: z.string(),
+});
+
+export type SignInFormSchema = z.infer<typeof signInSchema>;
+export const signInFormSchema = signInSchema.omit({
+  ipAddress: true,
+  userAgent: true,
 });

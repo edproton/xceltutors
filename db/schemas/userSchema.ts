@@ -12,7 +12,7 @@ export interface UserTable {
   id: Generated<number>;
   email: string;
   password: string;
-  type: UserType;
+  type: UserType | null;
   isActive: boolean;
 }
 
@@ -26,7 +26,7 @@ export const passwordSchema = z
   .min(8, { message: "Password must be at least 8 characters long" })
   .max(30, { message: "Password must not exceed 30 characters" });
 
-export const userTypeSchema = z.nativeEnum(UserType);
+export const userTypeSchema = z.nativeEnum(UserType).nullable();
 export const userSchema = z.object({
   id: z.number(),
   email: z.string().trim().email({ message: "Invalid email address" }),
@@ -36,7 +36,7 @@ export const userSchema = z.object({
 });
 
 export type CreateUserSchema = z.infer<typeof createUserSchema>;
-export const createUserSchema = userSchema.omit({ id: true });
+export const createUserSchema = userSchema.omit({ id: true, type: true });
 
 export type UpdateUserSchema = z.infer<typeof updateUserSchema>;
 export const updateUserSchema = userSchema.extend({
