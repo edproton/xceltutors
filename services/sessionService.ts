@@ -41,24 +41,15 @@ export async function createSession(
   return newSession;
 }
 
-export type SessionValidationResult =
-  | { session: SelectSession; userId: number }
-  | { session: null; userId: null };
-
-export async function validateSessionToken(
-  token: string
-): Promise<SessionValidationResult> {
+export async function validateSessionToken(token: string): Promise<string> {
   const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
 
   const result = await db
     .selectFrom(sessionTable)
     .innerJoin(userTable, "user.id", "session.userId")
     .select([
-      "session.id",
-      "session.userId",
-      "session.expiresAt",
-      "session.userAgent",
-      "session.ipAddress",
+      "session.id as sessionId",
+      "session.expiresAt as sessionExpiresAt",
       "user.id as userId",
       "user.isActive as userIsActive",
     ])
@@ -69,12 +60,9 @@ export async function validateSessionToken(
     throw new DomainError(Errors.Auth.InvalidSession);
   }
 
-  const session: SelectSession = {
-    id: result.id,
-    userId: result.userId,
-    expiresAt: result.expiresAt,
-    userAgent: result.userAgent,
-    ipAddress: result.ipAddress,
+  const session: Pick<SelectSession, "id" | "expiresAt"> = {
+    id: result.sessionId,
+    expiresAt: result.sessionExpiresAt,
   };
 
   if (Date.now() >= session.expiresAt.getTime()) {
@@ -100,7 +88,7 @@ export async function validateSessionToken(
     session.expiresAt = newExpiresAt;
   }
 
-  return { session, userId: result.userId };
+  return sessionId;
 }
 
 export async function invalidateSession(sessionId: string): Promise<void> {

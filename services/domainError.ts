@@ -14,6 +14,7 @@ export const Errors = {
   Auth: {
     InvalidCredentials: "AUTH_INVALID_CREDENTIALS",
     Unauthorized: "AUTH_UNAUTHORIZED",
+    Unauthenticated: "AUTH_UNAUTHENTICATED",
     SessionExpired: "AUTH_SESSION_EXPIRED",
     InvalidSession: "AUTH_INVALID_SESSION",
   },

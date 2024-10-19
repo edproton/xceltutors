@@ -2,11 +2,9 @@
 
 import { cookies } from "next/headers";
 import { env } from "../env.mjs";
-import {
-  SessionValidationResult,
-  validateSessionToken,
-} from "@/services/sessionService";
+import { validateSessionToken } from "@/services/sessionService";
 import { cache } from "react";
+import { DomainError, Errors } from "@/services/domainError";
 
 export function setSessionTokenCookie(token: string, expiresAt: Date): void {
   cookies().set("session", token, {
@@ -28,15 +26,13 @@ export function deleteSessionTokenCookie(): void {
   });
 }
 
-export const getCurrentSession = cache(
-  async (): Promise<SessionValidationResult> => {
-    const token = cookies().get("session")?.value ?? null;
-    if (token === null) {
-      return { session: null, userId: null };
-    }
-
-    const result = await validateSessionToken(token);
-
-    return result;
+export const getCurrentSession = cache(async (): Promise<string> => {
+  const token = cookies().get("session")?.value ?? null;
+  if (token === null) {
+    throw new DomainError(Errors.Auth.Unauthenticated);
   }
-);
+
+  const result = await validateSessionToken(token);
+
+  return result;
+});

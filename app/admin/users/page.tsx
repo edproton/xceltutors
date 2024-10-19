@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useRef, useMemo, useCallback, useEffect } from "react";
+import {
+  useState,
+  useRef,
+  useMemo,
+  useCallback,
+  useEffect,
+  Suspense,
+} from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   flexRender,
@@ -53,7 +60,7 @@ import { toast } from "@/hooks/use-toast";
 import { fetchUsersAction } from "./actions";
 import { SelectUserSchema } from "@/db/schemas/userSchema";
 
-export default function UserManagement() {
+function UserManagement() {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -66,24 +73,22 @@ export default function UserManagement() {
   const pathname = usePathname();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: users = [], isLoading: isInitialLoading } = useQuery<
-    SelectUserSchema[]
-  >({
+  const {
+    data: users = [],
+    isLoading: isInitialLoading,
+    isError,
+  } = useQuery<SelectUserSchema[]>({
     queryKey: ["users"],
-    queryFn: async () => {
-      const result = await fetchUsersAction();
-      if (result.success) {
-        return result.data;
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to load users.",
-          variant: "destructive",
-        });
-        return [];
-      }
-    },
+    queryFn: () => fetchUsersAction(),
   });
+
+  if (isError) {
+    toast({
+      title: "Error",
+      description: "Failed to load users.",
+      variant: "destructive",
+    });
+  }
 
   const clearFilter = () => {
     setGlobalFilter("");
@@ -408,5 +413,13 @@ export default function UserManagement() {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+export default function UserManagementPage() {
+  return (
+    <Suspense>
+      <UserManagement />
+    </Suspense>
   );
 }

@@ -15,18 +15,14 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import { createUserAction } from "./actions";
-import {
-  createUserSchema,
-  CreateUserSchema,
-  UserType,
-} from "@/db/schemas/userSchema";
+import { createUserSchema, CreateUserSchema } from "@/db/schemas/userSchema";
 import { Loader2 } from "lucide-react";
+import { Suspense } from "react";
 
-export default function CreateUserForm() {
+function CreateUserForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const backToPage = searchParams.get("backToPage");
@@ -36,7 +32,6 @@ export default function CreateUserForm() {
     defaultValues: {
       email: "",
       password: "",
-      type: UserType.student,
       isActive: true,
     },
   });
@@ -104,25 +99,6 @@ export default function CreateUserForm() {
               </p>
             )}
           </div>
-          <div className="space-y-2">
-            <Label>User Type</Label>
-            <RadioGroup
-              onValueChange={(value) =>
-                form.setValue("type", value as UserType)
-              }
-              defaultValue={form.getValues("type")}
-              className="flex flex-col space-y-1"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="student" id="student" />
-                <Label htmlFor="student">Student</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="tutor" id="tutor" />
-                <Label htmlFor="tutor">Tutor</Label>
-              </div>
-            </RadioGroup>
-          </div>
           <div className="flex items-center space-x-2">
             <Switch
               id="isActive"
@@ -148,4 +124,10 @@ export default function CreateUserForm() {
       </form>
     </Card>
   );
+}
+
+export default function CreateUserFormPage() {
+  <Suspense>
+    <CreateUserForm />
+  </Suspense>;
 }

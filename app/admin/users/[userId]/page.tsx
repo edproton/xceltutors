@@ -25,14 +25,10 @@ import {
   UserType,
 } from "@/db/schemas/userSchema";
 import { Loader2 } from "lucide-react";
-import React from "react";
+import React, { Suspense } from "react";
 import UserSessionsTable from "./UserSessionsTable";
 
-export default function UpdateUserForm({
-  params,
-}: {
-  params: { userId: number };
-}) {
+function UpdateUserForm({ params }: { params: { userId: number } }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const backToPage = searchParams.get("backToPage");
@@ -145,7 +141,7 @@ export default function UpdateUserForm({
               onValueChange={(value) =>
                 form.setValue("type", value as UserType)
               }
-              value={form.watch("type")}
+              value={form.watch("type") || undefined}
               className="flex flex-col space-y-1"
             >
               <div className="flex items-center space-x-2">
@@ -188,5 +184,17 @@ export default function UpdateUserForm({
         </CardFooter>
       </form>
     </Card>
+  );
+}
+
+export default function UpdateUserFormPage({
+  params,
+}: {
+  params: { userId: number };
+}) {
+  return (
+    <Suspense>
+      <UpdateUserForm params={params} />
+    </Suspense>
   );
 }

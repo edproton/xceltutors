@@ -18,20 +18,25 @@ import {
   Loader2,
   AlertTriangle,
 } from "lucide-react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { confirmEmailAction } from "./actions";
 import { useMutation } from "@tanstack/react-query";
 import { Errors } from "@/services/domainError";
 
-export default function ConfirmEmailPage() {
+interface ConfirmEmailPageProps {
+  params: {
+    verifyToken: string;
+  };
+}
+
+export default function ConfirmEmailPage({ params }: ConfirmEmailPageProps) {
   const [showWelcome, setShowWelcome] = useState(false);
   const [countdown, setCountdown] = useState(3);
-  const searchParams = useSearchParams();
   const router = useRouter();
-  const token = searchParams.get("token");
+  const { verifyToken } = params;
 
   const confirmEmailMutation = useMutation({
-    mutationFn: () => confirmEmailAction(token || ""),
+    mutationFn: () => confirmEmailAction(verifyToken),
     onSuccess: () => {
       setShowWelcome(true);
     },
@@ -43,10 +48,10 @@ export default function ConfirmEmailPage() {
   });
 
   useEffect(() => {
-    if (token) {
+    if (verifyToken) {
       confirmEmailMutation.mutate();
     }
-  }, [token]);
+  }, [verifyToken]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
