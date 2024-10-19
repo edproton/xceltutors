@@ -29,9 +29,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  credentialsSignUpFormSchema,
   CredentialsSignUpFormSchema,
-} from "@/services/auth/providers/credentials/schemas";
+  credentialsSignUpFormSchema,
+} from "@/services/auth/providers/credentials/schemas/signUpSchema";
 
 const SuccessIcon = () => (
   <motion.div

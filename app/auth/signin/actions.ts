@@ -2,8 +2,8 @@
 
 import { setSessionTokenCookie } from "@/lib/utils/cookiesUtils";
 import { credentialsSignIn } from "@/services/auth/providers/credentials/handler";
-import { CredentialsSignInFormSchema } from "@/services/auth/providers/credentials/schemas";
 import { headers } from "next/headers";
+import { CredentialsSignInFormSchema } from "@/services/auth/providers/credentials/schemas/signInSchema";
 
 export const credentialsSignInAction = async (
   params: CredentialsSignInFormSchema

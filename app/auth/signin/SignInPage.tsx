@@ -3,7 +3,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { credentialsSignInAction } from "./actions";
-
 import { useToast } from "@/hooks/use-toast";
 import {
   Form,
@@ -25,7 +24,7 @@ import { useRouter } from "next/navigation";
 import {
   credentialsSignInFormSchema,
   CredentialsSignInFormSchema,
-} from "@/services/auth/providers/credentials/schemas";
+} from "@/services/auth/providers/credentials/schemas/signInSchema";
 
 export default function SignInPage() {
   const { toast } = useToast();

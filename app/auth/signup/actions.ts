@@ -1,7 +1,7 @@
 "use server";
 
 import { credentialsSignUp } from "@/services/auth/providers/credentials/handler";
-import { CredentialsSignUpFormSchema } from "@/services/auth/providers/credentials/schemas";
+import { CredentialsSignUpFormSchema } from "@/services/auth/providers/credentials/schemas/signUpSchema";
 import { headers } from "next/headers";
 
 export const credentialsSignUpAction = async (

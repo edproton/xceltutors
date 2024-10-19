@@ -1,10 +1,5 @@
 import { z } from "zod";
-import { passwordSchema } from "@/db/schemas/userSchema";
-
-const emailSchema = z
-  .string()
-  .trim()
-  .email({ message: "Invalid email address" });
+import { emailSchema, passwordSchema } from "./sharedSchema";
 
 export type CredentialsSignUpSchema = z.infer<typeof credentialsSignUpSchema>;
 export const credentialsSignUpSchema = z.object({
@@ -14,6 +9,7 @@ export const credentialsSignUpSchema = z.object({
   userAgent: z.string(),
 });
 
+// Form schema
 export type CredentialsSignUpFormSchema = z.infer<
   typeof credentialsSignUpFormSchema
 >;
@@ -29,19 +25,3 @@ export const credentialsSignUpFormSchema = credentialsSignUpSchema
     message: "Passwords don't match",
     path: ["confirmPassword"],
   });
-
-export type CredentialsSignInSchema = z.infer<typeof credentialsSignInSchema>;
-export const credentialsSignInSchema = z.object({
-  email: emailSchema,
-  password: passwordSchema,
-  userAgent: z.string(),
-  ipAddress: z.string(),
-});
-
-export type CredentialsSignInFormSchema = z.infer<
-  typeof credentialsSignInFormSchema
->;
-export const credentialsSignInFormSchema = credentialsSignInSchema.omit({
-  ipAddress: true,
-  userAgent: true,
-});

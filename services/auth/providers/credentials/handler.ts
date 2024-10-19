@@ -1,15 +1,23 @@
 import { db } from "@/db";
-import { CreateUserSchema } from "@/db/schemas/userSchema";
+import { NewUser, userTable } from "@/db/schemas/userSchema";
 import { DomainError, Errors } from "@/services/domainError";
 import {
   generateVerificationToken,
   verifyToken,
 } from "@/services/token/tokenService";
 import bcrypt from "bcrypt";
-import { CredentialsSignInSchema, CredentialsSignUpSchema } from "./schemas";
-import { createUser } from "@/services/userService";
+
 import { sendConfirmationEmail } from "@/services/email/emailService";
 import { createSession, generateSessionToken } from "@/services/sessionService";
+import { validateSchema } from "@/lib/utils/validationUtils";
+import {
+  credentialsSignUpFormSchema,
+  CredentialsSignUpSchema,
+} from "./schemas/signUpSchema";
+import {
+  credentialsSignInSchema,
+  CredentialsSignInSchema,
+} from "./schemas/signInSchema";
 
 export interface AuthResult {
   token: string;
@@ -42,22 +50,34 @@ export async function credentialsConfirmEmail(token: string) {
     .execute();
 }
 
-export async function credentialsSignUp({
-  email,
-  password,
-}: CredentialsSignUpSchema) {
-  const newUser: CreateUserSchema = {
-    email,
-    password,
+export async function credentialsSignUp(requestData: CredentialsSignUpSchema) {
+  validateSchema(credentialsSignUpFormSchema, requestData);
+
+  const existingUser = await db
+    .selectFrom(userTable)
+    .select("id")
+    .where("email", "=", requestData.email)
+    .limit(1)
+    .executeTakeFirst();
+
+  if (existingUser) {
+    throw new DomainError(Errors.User.EmailAlreadyExists);
+  }
+
+  const hashedPassword = await bcrypt.hash(requestData.password, 10);
+
+  const newUser: NewUser = {
+    email: requestData.email,
+    password: hashedPassword,
     isActive: false,
   };
 
-  await createUser(newUser);
+  await db.insertInto(userTable).values(newUser).execute();
 
   const user = await db
     .selectFrom("user")
     .select(["id", "email", "type"])
-    .where("email", "=", email)
+    .where("email", "=", newUser.email)
     .executeTakeFirstOrThrow();
 
   const verificationToken = await generateVerificationToken({
@@ -68,23 +88,25 @@ export async function credentialsSignUp({
   await sendConfirmationEmail(user.email, verificationToken);
 }
 
-export async function credentialsSignIn({
-  email,
-  password,
-  ipAddress,
-  userAgent,
-}: CredentialsSignInSchema): Promise<AuthResult> {
+export async function credentialsSignIn(
+  requestData: CredentialsSignInSchema
+): Promise<AuthResult> {
+  validateSchema(credentialsSignInSchema, requestData);
+
   const user = await db
     .selectFrom("user")
     .select(["id", "email", "password", "type", "isActive"])
-    .where("email", "=", email)
+    .where("email", "=", requestData.email)
     .executeTakeFirst();
 
-  if (!user) {
+  if (!user || !user.password) {
     throw new DomainError(Errors.Auth.InvalidCredentials);
   }
 
-  const isPasswordValid = await bcrypt.compare(password, user.password);
+  const isPasswordValid = await bcrypt.compare(
+    requestData.password,
+    user.password
+  );
   if (!isPasswordValid) {
     throw new DomainError(Errors.Auth.InvalidCredentials);
   }
@@ -94,7 +116,12 @@ export async function credentialsSignIn({
   }
 
   const token = generateSessionToken();
-  const session = await createSession(token, user.id, userAgent, ipAddress);
+  const session = await createSession(
+    token,
+    user.id,
+    requestData.userAgent,
+    requestData.ipAddress
+  );
 
   return {
     token,
