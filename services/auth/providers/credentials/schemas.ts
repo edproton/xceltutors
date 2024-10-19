@@ -6,16 +6,18 @@ const emailSchema = z
   .trim()
   .email({ message: "Invalid email address" });
 
-export type SignUpSchema = z.infer<typeof signUpSchema>;
-export const signUpSchema = z.object({
+export type CredentialsSignUpSchema = z.infer<typeof credentialsSignUpSchema>;
+export const credentialsSignUpSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   ipAddress: z.string(),
   userAgent: z.string(),
 });
 
-export type SignUpFormSchema = z.infer<typeof signUpFormSchema>;
-export const signUpFormSchema = signUpSchema
+export type CredentialsSignUpFormSchema = z.infer<
+  typeof credentialsSignUpFormSchema
+>;
+export const credentialsSignUpFormSchema = credentialsSignUpSchema
   .omit({
     ipAddress: true,
     userAgent: true,
@@ -28,16 +30,18 @@ export const signUpFormSchema = signUpSchema
     path: ["confirmPassword"],
   });
 
-export type SignInSchema = z.infer<typeof signInSchema>;
-export const signInSchema = z.object({
+export type CredentialsSignInSchema = z.infer<typeof credentialsSignInSchema>;
+export const credentialsSignInSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   userAgent: z.string(),
   ipAddress: z.string(),
 });
 
-export type SignInFormSchema = z.infer<typeof signInSchema>;
-export const signInFormSchema = signInSchema.omit({
+export type CredentialsSignInFormSchema = z.infer<
+  typeof credentialsSignInFormSchema
+>;
+export const credentialsSignInFormSchema = credentialsSignInSchema.omit({
   ipAddress: true,
   userAgent: true,
 });

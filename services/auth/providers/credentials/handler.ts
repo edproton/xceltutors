@@ -1,19 +1,22 @@
 import { db } from "@/db";
 import { CreateUserSchema } from "@/db/schemas/userSchema";
+import { DomainError, Errors } from "@/services/domainError";
+import {
+  generateVerificationToken,
+  verifyToken,
+} from "@/services/token/tokenService";
 import bcrypt from "bcrypt";
-import { SignUpSchema, SignInSchema } from "./authServiceSchemas";
-import { createSession, generateSessionToken } from "../sessionService";
-import { createUser } from "../userService";
-import { sendConfirmationEmail } from "../email/emailService";
-import { generateVerificationToken, verifyToken } from "../token/tokenService";
-import { DomainError, Errors } from "../domainError";
+import { CredentialsSignInSchema, CredentialsSignUpSchema } from "./schemas";
+import { createUser } from "@/services/userService";
+import { sendConfirmationEmail } from "@/services/email/emailService";
+import { createSession, generateSessionToken } from "@/services/sessionService";
 
 export interface AuthResult {
   token: string;
   expiresAt: Date;
 }
 
-export async function confirmEmail(token: string) {
+export async function credentialsConfirmEmail(token: string) {
   const { userId, email } = await verifyToken(token);
 
   const existingUser = await db
@@ -39,7 +42,10 @@ export async function confirmEmail(token: string) {
     .execute();
 }
 
-export async function signUp({ email, password }: SignUpSchema) {
+export async function credentialsSignUp({
+  email,
+  password,
+}: CredentialsSignUpSchema) {
   const newUser: CreateUserSchema = {
     email,
     password,
@@ -62,12 +68,12 @@ export async function signUp({ email, password }: SignUpSchema) {
   await sendConfirmationEmail(user.email, verificationToken);
 }
 
-export async function signIn({
+export async function credentialsSignIn({
   email,
   password,
   ipAddress,
   userAgent,
-}: SignInSchema): Promise<AuthResult> {
+}: CredentialsSignInSchema): Promise<AuthResult> {
   const user = await db
     .selectFrom("user")
     .select(["id", "email", "password", "type", "isActive"])

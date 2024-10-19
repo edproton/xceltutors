@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { decodeIdToken, type OAuth2Tokens } from "arctic";
-import { google } from "@/services/auth/oauthProviders";
+import { googleProvider } from "@/services/auth/providers";
 
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
@@ -26,7 +26,7 @@ export async function GET(request: Request): Promise<Response> {
 
   let tokens: OAuth2Tokens;
   try {
-    tokens = await google.validateAuthorizationCode(code, codeVerifier);
+    tokens = await googleProvider.validateAuthorizationCode(code, codeVerifier);
   } catch {
     return new Response("Please restart the process.", {
       status: 400,

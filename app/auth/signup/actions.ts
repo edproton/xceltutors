@@ -1,10 +1,12 @@
 "use server";
 
-import { signUp } from "@/services/auth/authService";
-import { SignUpFormSchema } from "@/services/auth/authServiceSchemas";
+import { credentialsSignUp } from "@/services/auth/providers/credentials/handler";
+import { CredentialsSignUpFormSchema } from "@/services/auth/providers/credentials/schemas";
 import { headers } from "next/headers";
 
-export const signUpAction = async (params: SignUpFormSchema) => {
+export const credentialsSignUpAction = async (
+  params: CredentialsSignUpFormSchema
+) => {
   const headersList = headers();
   const userAgent = headersList.get("user-agent") || "Unknown";
 
@@ -21,7 +23,7 @@ export const signUpAction = async (params: SignUpFormSchema) => {
   // If there are multiple IP addresses, take the first one
   ipAddress = ipAddress.split(",")[0].trim();
 
-  await signUp({
+  await credentialsSignUp({
     ...params,
     ipAddress,
     userAgent,

@@ -2,11 +2,8 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import { signInAction } from "./actions";
-import {
-  signInFormSchema,
-  SignInFormSchema,
-} from "@/services/auth/authServiceSchemas";
+import { credentialsSignInAction } from "./actions";
+
 import { useToast } from "@/hooks/use-toast";
 import {
   Form,
@@ -25,17 +22,21 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Separator } from "@/components/ui/separator";
 import { useRouter } from "next/navigation";
+import {
+  credentialsSignInFormSchema,
+  CredentialsSignInFormSchema,
+} from "@/services/auth/providers/credentials/schemas";
 
 export default function SignInPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [showEmailForm, setShowEmailForm] = useState(false);
-  const form = useForm<SignInFormSchema>({
-    resolver: zodResolver(signInFormSchema),
+  const form = useForm<CredentialsSignInFormSchema>({
+    resolver: zodResolver(credentialsSignInFormSchema),
   });
 
   const signInMutation = useMutation({
-    mutationFn: signInAction,
+    mutationFn: credentialsSignInAction,
     onSuccess: () => {
       router.push("/dashboard");
     },
@@ -48,7 +49,7 @@ export default function SignInPage() {
     },
   });
 
-  function onSignInSubmit(data: SignInFormSchema) {
+  function onSignInSubmit(data: CredentialsSignInFormSchema) {
     signInMutation.mutate(data);
   }
 

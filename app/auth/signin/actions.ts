@@ -1,11 +1,13 @@
 "use server";
 
 import { setSessionTokenCookie } from "@/lib/utils/cookiesUtils";
-import { signIn } from "@/services/auth/authService";
-import { SignInFormSchema } from "@/services/auth/authServiceSchemas";
+import { credentialsSignIn } from "@/services/auth/providers/credentials/handler";
+import { CredentialsSignInFormSchema } from "@/services/auth/providers/credentials/schemas";
 import { headers } from "next/headers";
 
-export const signInAction = async (params: SignInFormSchema) => {
+export const credentialsSignInAction = async (
+  params: CredentialsSignInFormSchema
+) => {
   const headersList = headers();
   const userAgent = headersList.get("user-agent") || "Unknown";
 
@@ -22,7 +24,7 @@ export const signInAction = async (params: SignInFormSchema) => {
   // If there are multiple IP addresses, take the first one
   ipAddress = ipAddress.split(",")[0].trim();
 
-  const signInResponse = await signIn({
+  const signInResponse = await credentialsSignIn({
     ...params,
     ipAddress,
     userAgent,

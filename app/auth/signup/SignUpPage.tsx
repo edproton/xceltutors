@@ -2,11 +2,8 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import { signUpAction } from "./actions";
-import {
-  signUpFormSchema,
-  SignUpFormSchema,
-} from "@/services/auth/authServiceSchemas";
+import { credentialsSignUpAction } from "./actions";
+
 import { useToast } from "@/hooks/use-toast";
 import {
   Form,
@@ -31,6 +28,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  credentialsSignUpFormSchema,
+  CredentialsSignUpFormSchema,
+} from "@/services/auth/providers/credentials/schemas";
 
 const SuccessIcon = () => (
   <motion.div
@@ -50,12 +51,12 @@ export default function SignUpPage() {
   const { toast } = useToast();
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  const form = useForm<SignUpFormSchema>({
-    resolver: zodResolver(signUpFormSchema),
+  const form = useForm<CredentialsSignUpFormSchema>({
+    resolver: zodResolver(credentialsSignUpFormSchema),
   });
 
   const signUpMutation = useMutation({
-    mutationFn: signUpAction,
+    mutationFn: credentialsSignUpAction,
     onSuccess: () => {
       setShowSuccessDialog(true);
     },
@@ -68,7 +69,7 @@ export default function SignUpPage() {
     },
   });
 
-  function onSignUpSubmit(data: SignUpFormSchema) {
+  function onSignUpSubmit(data: CredentialsSignUpFormSchema) {
     signUpMutation.mutate(data);
   }
 

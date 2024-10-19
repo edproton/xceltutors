@@ -1,12 +1,12 @@
 import { env } from "@/lib/env.mjs";
-import { google } from "@/services/auth/oauthProviders";
+import { googleProvider } from "@/services/auth/providers";
 import { generateState, generateCodeVerifier } from "arctic";
 import { cookies } from "next/headers";
 
 export async function GET(): Promise<Response> {
   const state = generateState();
   const codeVerifier = generateCodeVerifier();
-  const url = google.createAuthorizationURL(state, codeVerifier, [
+  const url = googleProvider.createAuthorizationURL(state, codeVerifier, [
     "openid",
     "profile",
     "email",
