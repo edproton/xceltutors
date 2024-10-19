@@ -12,9 +12,13 @@ export async function up(db: Kysely<any>): Promise<void> {
     .createTable("user")
     .addColumn("id", "serial", (col) => col.primaryKey())
     .addColumn("email", "varchar", (col) => col.notNull().unique())
-    .addColumn("password", "varchar", (col) => col.notNull())
+    .addColumn("first_name", "varchar", (col) => col.notNull())
+    .addColumn("last_name", "varchar", (col) => col.notNull())
+    .addColumn("password", "varchar")
     .addColumn("type", sql`user_type`)
-    .addColumn("is_active", "boolean", (col) => col.notNull().defaultTo(true))
+    .addColumn("is_active", "boolean", (col) => col.notNull().defaultTo(false))
+    .addColumn("google_id", "varchar")
+    .addColumn("picture", "varchar")
     .execute();
 
   // Create an index on the email column
@@ -23,14 +27,22 @@ export async function up(db: Kysely<any>): Promise<void> {
     .on("user")
     .column("email")
     .execute();
+
+  // Create an index on the google_id column
+  await db.schema
+    .createIndex("user_google_id_index")
+    .on("user")
+    .column("google_id")
+    .execute();
 }
 
 export async function down(db: Kysely<any>): Promise<void> {
+  // Drop the indexes
+  await db.schema.dropIndex("user_google_id_index").execute();
+  await db.schema.dropIndex("user_email_index").execute();
+
   // Drop the table
   await db.schema.dropTable("user").execute();
-
-  // Drop the index
-  await db.schema.dropIndex("user_email_index").execute();
 
   // Drop the enum type
   await db.schema.dropType("user_type").execute();

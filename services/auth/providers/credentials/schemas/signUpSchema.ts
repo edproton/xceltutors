@@ -1,8 +1,19 @@
 import { z } from "zod";
 import { emailSchema, passwordSchema } from "./sharedSchema";
 
+// Define name schemas
+const firstNameSchema = z
+  .string()
+  .min(2, "First name must be at least 2 characters long");
+const lastNameSchema = z
+  .string()
+  .min(2, "Last name must be at least 2 characters long");
+
+// Service schema
 export type CredentialsSignUpSchema = z.infer<typeof credentialsSignUpSchema>;
 export const credentialsSignUpSchema = z.object({
+  firstName: firstNameSchema,
+  lastName: lastNameSchema,
   email: emailSchema,
   password: passwordSchema,
   ipAddress: z.string(),

@@ -8,6 +8,7 @@ export const wrapDomainError = async <T>(fn: () => Promise<T>): Promise<T> => {
       throw new Error(error.type);
     }
 
+    console.error((error as Error).message);
     throw new Error(Errors.Server.InternalError);
   }
 };

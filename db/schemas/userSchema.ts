@@ -9,10 +9,14 @@ export enum UserType {
 
 export interface UserTable {
   id: Generated<number>;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string | null;
   type: UserType | null;
   isActive: boolean;
+  googleId: string | null;
+  picture: string | null;
 }
 
 export type NewUser = Insertable<UserTable>;

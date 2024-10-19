@@ -12,11 +12,16 @@ export const Errors = {
     NotConfirmed: "USER_NOT_CONFIRMED",
   },
   Auth: {
+    InvalidToken: "AUTH_INVALID_TOKEN",
+    TokenExpired: "AUTH_TOKEN_EXPIRED",
     InvalidCredentials: "AUTH_INVALID_CREDENTIALS",
     Unauthorized: "AUTH_UNAUTHORIZED",
     Unauthenticated: "AUTH_UNAUTHENTICATED",
     SessionExpired: "AUTH_SESSION_EXPIRED",
     InvalidSession: "AUTH_INVALID_SESSION",
+    InvalidOAuthFlow: "AUTH_OAUTH_INVALID_FLOW",
+    InvalidOAuthState: "AUTH_OAUTH_INVALID_STATE",
+    InvalidOAuthCode: "AUTH_OAUTH_INVALID_CODE",
   },
   Data: {
     NotFound: "DATA_NOT_FOUND",

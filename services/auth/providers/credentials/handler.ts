@@ -28,7 +28,7 @@ export async function credentialsConfirmEmail(token: string) {
   const { userId, email } = await verifyToken(token);
 
   const existingUser = await db
-    .selectFrom("user")
+    .selectFrom(userTable)
     .selectAll()
     .where("id", "=", userId)
     .where("email", "=", email)
@@ -43,7 +43,7 @@ export async function credentialsConfirmEmail(token: string) {
   }
 
   await db
-    .updateTable("user")
+    .updateTable(userTable)
     .set({ isActive: true })
     .where("id", "=", userId)
     .where("email", "=", email)
@@ -67,6 +67,8 @@ export async function credentialsSignUp(requestData: CredentialsSignUpSchema) {
   const hashedPassword = await bcrypt.hash(requestData.password, 10);
 
   const newUser: NewUser = {
+    firstName: requestData.firstName,
+    lastName: requestData.lastName,
     email: requestData.email,
     password: hashedPassword,
     isActive: false,
@@ -75,7 +77,7 @@ export async function credentialsSignUp(requestData: CredentialsSignUpSchema) {
   await db.insertInto(userTable).values(newUser).execute();
 
   const user = await db
-    .selectFrom("user")
+    .selectFrom(userTable)
     .select(["id", "email", "type"])
     .where("email", "=", newUser.email)
     .executeTakeFirstOrThrow();
@@ -94,7 +96,7 @@ export async function credentialsSignIn(
   validateSchema(credentialsSignInSchema, requestData);
 
   const user = await db
-    .selectFrom("user")
+    .selectFrom(userTable)
     .select(["id", "email", "password", "type", "isActive"])
     .where("email", "=", requestData.email)
     .executeTakeFirst();

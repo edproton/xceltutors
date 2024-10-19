@@ -43,7 +43,7 @@ export async function sendConfirmationEmail(
   to: string,
   confirmationToken: string
 ): Promise<void> {
-  const confirmationUrl = `${env.NEXT_PUBLIC_API_URL}/auth/confirm?token=${confirmationToken}`;
+  const confirmationUrl = `${env.NEXT_PUBLIC_API_URL}/auth/confirm/${confirmationToken}`;
   const subject = "Welcome to XcelTutors - Please Confirm Your Email";
   const text = `Welcome to XcelTutors! We're excited to have you on board. Please confirm your email by clicking on the following link: ${confirmationUrl}`;
   const html = `
