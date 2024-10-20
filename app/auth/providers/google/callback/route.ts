@@ -1,11 +1,9 @@
 import { cookies } from "next/headers";
-import {
-  GoogleClaims,
-  googleSignIn,
-} from "@/services/auth/providers/google/handler";
+import { googleSignIn } from "@/services/auth/providers/google/handler";
 import { googleProvider } from "@/services/auth/providers";
 import { setSessionTokenCookie } from "@/lib/utils/cookiesUtils";
 import { decodeIdToken, OAuth2Tokens } from "arctic";
+import { OAuthClaims } from "@/services/auth/providers/oauthHandler";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -39,7 +37,7 @@ export async function GET(req: Request) {
       status: 400,
     });
   }
-  const claims = decodeIdToken(tokens.idToken()) as GoogleClaims;
+  const claims = decodeIdToken(tokens.idToken()) as OAuthClaims;
   const authResult = await googleSignIn(claims);
 
   setSessionTokenCookie(authResult.token, authResult.expiresAt);

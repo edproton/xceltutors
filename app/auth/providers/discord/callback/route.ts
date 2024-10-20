@@ -1,11 +1,9 @@
 import { cookies } from "next/headers";
-import {
-  discordSignIn,
-  DiscordClaims,
-} from "@/services/auth/providers/discord/handler";
+import { discordSignIn } from "@/services/auth/providers/discord/handler";
 import { discordProvider } from "@/services/auth/providers";
 import { setSessionTokenCookie } from "@/lib/utils/cookiesUtils";
 import { OAuth2Tokens } from "arctic";
+import { OAuthClaims } from "@/services/auth/providers/oauthHandler";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -45,7 +43,7 @@ export async function GET(req: Request) {
 
     const discordUser = await response.json();
 
-    const claims: DiscordClaims = {
+    const claims: OAuthClaims = {
       sub: discordUser.id,
       name: discordUser.username,
       picture: discordUser.avatar
