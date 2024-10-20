@@ -1,25 +1,16 @@
 import { env } from "@/lib/env.mjs";
-import { googleProvider } from "@/services/auth/providers";
-import { generateState, generateCodeVerifier } from "arctic";
+import { discordProvider } from "@/services/auth/providers";
+import { generateState } from "arctic";
 import { cookies } from "next/headers";
 
 export async function GET(): Promise<Response> {
   const state = generateState();
-  const codeVerifier = generateCodeVerifier();
-  const url = googleProvider.createAuthorizationURL(state, codeVerifier, [
-    "openid",
-    "profile",
+  const url = discordProvider.createAuthorizationURL(state, [
+    "identify",
     "email",
   ]);
 
-  cookies().set("google_oauth_state", state, {
-    path: "/",
-    httpOnly: true,
-    secure: env.NEXT_PUBLIC_API_URL === "production",
-    maxAge: 60 * 10, // 10 minutes
-    sameSite: "lax",
-  });
-  cookies().set("google_code_verifier", codeVerifier, {
+  cookies().set("discord_oauth_state", state, {
     path: "/",
     httpOnly: true,
     secure: env.NEXT_PUBLIC_API_URL === "production",

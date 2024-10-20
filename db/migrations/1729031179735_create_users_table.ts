@@ -18,6 +18,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("type", sql`user_type`)
     .addColumn("is_active", "boolean", (col) => col.notNull().defaultTo(false))
     .addColumn("google_id", "varchar")
+    .addColumn("discord_id", "varchar")
     .addColumn("picture", "varchar")
     .execute();
 
@@ -34,11 +35,19 @@ export async function up(db: Kysely<any>): Promise<void> {
     .on("user")
     .column("google_id")
     .execute();
+
+  // Create an index on the discord_id column
+  await db.schema
+    .createIndex("user_discord_id_index")
+    .on("user")
+    .column("discord_id")
+    .execute();
 }
 
 export async function down(db: Kysely<any>): Promise<void> {
   // Drop the indexes
   await db.schema.dropIndex("user_google_id_index").execute();
+  await db.schema.dropIndex("user_discord_id_index").execute();
   await db.schema.dropIndex("user_email_index").execute();
 
   // Drop the table

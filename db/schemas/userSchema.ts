@@ -16,6 +16,7 @@ export interface UserTable {
   type: UserType | null;
   isActive: boolean;
   googleId: string | null;
+  discordId: string | null;
   picture: string | null;
 }
 
