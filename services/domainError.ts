@@ -22,6 +22,8 @@ export const Errors = {
     InvalidOAuthFlow: "AUTH_OAUTH_INVALID_FLOW",
     InvalidOAuthState: "AUTH_OAUTH_INVALID_STATE",
     InvalidOAuthCode: "AUTH_OAUTH_INVALID_CODE",
+    ProviderCredentialsAlreadyExists:
+      "AUTH_PROVIDER_CREDENTIALS_ALREADY_EXISTS",
   },
   Data: {
     NotFound: "DATA_NOT_FOUND",

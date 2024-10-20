@@ -55,17 +55,35 @@ export async function credentialsSignUp(requestData: CredentialsSignUpSchema) {
 
   const existingUser = await db
     .selectFrom(userTable)
-    .select("id")
+    .select(["id", "googleId", "discordId", "isActive", "password"])
     .where("email", "=", requestData.email)
     .limit(1)
     .executeTakeFirst();
 
-  if (existingUser) {
-    throw new DomainError(Errors.User.EmailAlreadyExists);
-  }
-
   const hashedPassword = await bcrypt.hash(requestData.password, 10);
 
+  if (existingUser) {
+    if (existingUser.password) {
+      throw new DomainError(Errors.Auth.ProviderCredentialsAlreadyExists);
+    }
+
+    // User exists but only with Google or Discord account
+    await db
+      .updateTable(userTable)
+      .set({
+        firstName: requestData.firstName,
+        lastName: requestData.lastName,
+        password: hashedPassword,
+        isActive: true, // Assuming the Google/Discord account is already active
+      })
+      .where("id", "=", existingUser.id)
+      .execute();
+
+    // No need to send confirmation email as the account is already active
+    return;
+  }
+
+  // New user creation
   const newUser: NewUser = {
     firstName: requestData.firstName,
     lastName: requestData.lastName,
@@ -74,20 +92,18 @@ export async function credentialsSignUp(requestData: CredentialsSignUpSchema) {
     isActive: false,
   };
 
-  await db.insertInto(userTable).values(newUser).execute();
-
-  const user = await db
-    .selectFrom(userTable)
-    .select(["id", "email", "type"])
-    .where("email", "=", newUser.email)
+  const insertResult = await db
+    .insertInto(userTable)
+    .values(newUser)
+    .returning(["id", "email"])
     .executeTakeFirstOrThrow();
 
   const verificationToken = await generateVerificationToken({
-    userId: user.id,
-    email: user.email,
+    userId: insertResult.id,
+    email: insertResult.email,
   });
 
-  await sendConfirmationEmail(user.email, verificationToken);
+  await sendConfirmationEmail(insertResult.email, verificationToken);
 }
 
 export async function credentialsSignIn(
