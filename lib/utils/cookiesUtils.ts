@@ -1,5 +1,3 @@
-// @lib/utils/cookiesUtils.ts
-
 import { cookies } from "next/headers";
 import { env } from "../env.mjs";
 import { validateSessionToken } from "@/services/sessionService";

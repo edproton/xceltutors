@@ -5,6 +5,10 @@ import {
   ProviderType,
 } from "../oauthHandler";
 
-export async function googleSignIn(claims: OAuthClaims): Promise<AuthResult> {
-  return oauthSignIn(claims, ProviderType.Google);
+export async function googleSignIn(
+  claims: OAuthClaims,
+  ipAddress: string,
+  userAgent: string
+): Promise<AuthResult> {
+  return oauthSignIn(claims, ProviderType.Google, ipAddress, userAgent);
 }

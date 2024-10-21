@@ -4,8 +4,9 @@ import { DomainError, Errors } from "@/services/domainError";
 import { createSession, generateSessionToken } from "@/services/sessionService";
 
 export enum ProviderType {
-  Google = "Google",
-  Discord = "Discord",
+  Credentials = "credentials",
+  Google = "google",
+  Discord = "discord",
 }
 
 export interface AuthResult {
@@ -21,7 +22,7 @@ export interface OAuthClaims {
 }
 
 type ProviderIdField = {
-  [K in ProviderType]: string;
+  [K in Exclude<ProviderType, ProviderType.Credentials>]: string;
 };
 
 const providerIdFields: ProviderIdField = {
@@ -29,12 +30,14 @@ const providerIdFields: ProviderIdField = {
   [ProviderType.Discord]: "discordId",
 };
 
-function getIdField(providerType: ProviderType): string {
+function getIdField(
+  providerType: Exclude<ProviderType, ProviderType.Credentials>
+): string {
   return providerIdFields[providerType];
 }
 
 async function findUserByProviderId(
-  providerType: ProviderType,
+  providerType: Exclude<ProviderType, ProviderType.Credentials>,
   providerId: string
 ) {
   const { ref } = db.dynamic;
@@ -74,21 +77,27 @@ async function createUser(newUser: NewUser) {
 
 async function createAuthResult(
   userId: number,
-  providerType: ProviderType
+  providerType: ProviderType,
+  ipAddress: string,
+  userAgent: string
 ): Promise<AuthResult> {
   const token = generateSessionToken();
   const session = await createSession(
     token,
     userId,
-    `${providerType} OAuth`,
-    ""
+    ipAddress,
+    userAgent,
+    providerType
   );
+
   return { token, expiresAt: session.expiresAt };
 }
 
 export async function oauthSignIn(
   claims: OAuthClaims,
-  providerType: ProviderType
+  providerType: Exclude<ProviderType, ProviderType.Credentials>,
+  ipAddress: string,
+  userAgent: string
 ): Promise<AuthResult> {
   const { sub: providerId, picture, email, name: fullName } = claims;
   const [firstName, ...lastNameParts] = fullName.split(" ");
@@ -108,7 +117,12 @@ export async function oauthSignIn(
       picture,
     });
 
-    return createAuthResult(userByProviderId.id, providerType);
+    return createAuthResult(
+      userByProviderId.id,
+      providerType,
+      ipAddress,
+      userAgent
+    );
   }
 
   const userByEmail = await findUserByEmail(email);
@@ -124,7 +138,7 @@ export async function oauthSignIn(
       picture,
     });
 
-    return createAuthResult(userByEmail.id, providerType);
+    return createAuthResult(userByEmail.id, providerType, ipAddress, userAgent);
   }
 
   const newUser: NewUser = {
@@ -139,5 +153,5 @@ export async function oauthSignIn(
   };
 
   const newUserId = await createUser(newUser);
-  return createAuthResult(newUserId, providerType);
+  return createAuthResult(newUserId, providerType, ipAddress, userAgent);
 }

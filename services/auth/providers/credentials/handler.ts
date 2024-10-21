@@ -18,6 +18,7 @@ import {
   credentialsSignInSchema,
   CredentialsSignInSchema,
 } from "./schemas/signInSchema";
+import { ProviderType } from "../oauthHandler";
 
 export interface AuthResult {
   token: string;
@@ -138,7 +139,8 @@ export async function credentialsSignIn(
     token,
     user.id,
     requestData.userAgent,
-    requestData.ipAddress
+    requestData.ipAddress,
+    ProviderType.Discord
   );
 
   return {

@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { googleSignIn } from "@/services/auth/providers/google/handler";
 import { googleProvider } from "@/services/auth/providers";
 import { setSessionTokenCookie } from "@/lib/utils/cookiesUtils";
@@ -38,7 +38,10 @@ export async function GET(req: Request) {
     });
   }
   const claims = decodeIdToken(tokens.idToken()) as OAuthClaims;
-  const authResult = await googleSignIn(claims);
+
+  const ipAddress = headers().get("x-forwarded-for") || "unknown";
+  const userAgent = headers().get("user-agent") || "unknown";
+  const authResult = await googleSignIn(claims, ipAddress, userAgent);
 
   setSessionTokenCookie(authResult.token, authResult.expiresAt);
 

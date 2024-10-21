@@ -11,6 +11,7 @@ import {
   sessionTable,
   NewSession,
 } from "@/db/schemas/sessionSchema";
+import { ProviderType } from "./auth/providers/oauthHandler";
 
 export function generateSessionToken(): string {
   const bytes = new Uint8Array(20);
@@ -23,7 +24,8 @@ export async function createSession(
   token: string,
   userId: number,
   userAgent: string,
-  ipAddress: string
+  ipAddress: string,
+  providerType: ProviderType
 ): Promise<SelectSession> {
   const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
@@ -34,6 +36,7 @@ export async function createSession(
     expiresAt: expiresAt,
     userAgent: userAgent,
     ipAddress: ipAddress,
+    providerType: providerType,
   };
 
   await db.insertInto(sessionTable).values(newSession).execute();

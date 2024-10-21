@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { discordSignIn } from "@/services/auth/providers/discord/handler";
 import { discordProvider } from "@/services/auth/providers";
 import { setSessionTokenCookie } from "@/lib/utils/cookiesUtils";
@@ -52,7 +52,9 @@ export async function GET(req: Request) {
       email: discordUser.email,
     };
 
-    const authResult = await discordSignIn(claims);
+    const ipAddress = headers().get("x-forwarded-for") || "unknown";
+    const userAgent = headers().get("user-agent") || "unknown";
+    const authResult = await discordSignIn(claims, ipAddress, userAgent);
 
     setSessionTokenCookie(authResult.token, authResult.expiresAt);
 
