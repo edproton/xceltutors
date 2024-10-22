@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "dotenv -e .env.local -- kysely migrate:latest && next dev",
-    "build": "kysely migrate:latest && next build",
     "start": "next start",
+    "build": "next build",
+    "migrate": "kysely migrate:latest",
     "lint": "next lint",
-    "kysely": "kysely",
     "migrate:make": "dotenv -e .env.local -- kysely migrate:make",
     "migrate:latest": "dotenv -e .env.local -- kysely migrate:latest",
     "migrate:up": "dotenv -e .env.local -- kysely migrate:up",
@@ -94,5 +94,6 @@
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
-  }
+  },
+  "packageManager": "pnpm@9.12.2"
 }
