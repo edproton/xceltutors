@@ -8,6 +8,8 @@ export const metadata: Metadata = {
   description: "Tutoring platform for excellence",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function RootLayout({
   children,
 }: {
@@ -16,7 +18,7 @@ export default async function RootLayout({
   const {
     user: { firstName, lastName, email, picture },
   } = await getUserBySession();
-  console.log(picture);
+
   return (
     <>
       <div className="flex h-screen overflow-hidden">
