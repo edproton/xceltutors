@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { env } from "../env.mjs";
+import { env } from "../env";
 import { validateSessionToken } from "@/services/sessionService";
 import { cache } from "react";
 import { DomainError, Errors } from "@/services/domainError";

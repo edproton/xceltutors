@@ -1,5 +1,5 @@
 import { JWTVerifyResult, SignJWT, jwtVerify } from "jose";
-import { env } from "@/lib/env.mjs";
+import { env } from "@/lib/env";
 import { DomainError, Errors } from "../domainError";
 
 interface TokenPayload {

@@ -1,4 +1,4 @@
-import { env } from "@/lib/env.mjs";
+import { env } from "@/lib/env";
 import { Discord, Google } from "arctic";
 
 export const googleProvider = new Google(

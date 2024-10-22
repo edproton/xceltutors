@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import ConfirmEmailPage from "./ConfirmEmailPage";
-import { env } from "@/lib/env.mjs";
+import { env } from "@/lib/env";
 
 export const metadata: Metadata = {
   title: "Confirm Your Email - XcelTutors",

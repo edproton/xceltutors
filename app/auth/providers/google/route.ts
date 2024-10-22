@@ -1,4 +1,4 @@
-import { env } from "@/lib/env.mjs";
+import { env } from "@/lib/env";
 import { googleProvider } from "@/services/auth/providers";
 import { generateState, generateCodeVerifier } from "arctic";
 import { cookies } from "next/headers";

@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import { env } from "@/lib/env.mjs";
+import { env } from "@/lib/env";
 
 // Create a transporter using Zoho's SMTP
 const transporter = nodemailer.createTransport({

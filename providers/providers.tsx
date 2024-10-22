@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { type ThemeProviderProps } from "next-themes/dist/types";
 import { ThemeProvider } from "./theme-provider";
 
-export function Providers({ children, ...themeProps }: ThemeProviderProps) {
+export function Providers({ children }: ThemeProviderProps) {
   const queryClient = new QueryClient();
 
   return (
