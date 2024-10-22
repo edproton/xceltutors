@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useTheme } from "next-themes";
@@ -8,7 +7,6 @@ import {
   BadgeCheck,
   Bell,
   Calendar,
-  ChevronRight,
   ChevronsUpDown,
   CreditCard,
   GalleryVerticalEnd,
@@ -22,8 +20,6 @@ import {
   Sun,
   Users,
 } from "lucide-react";
-
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Collapsible,
   CollapsibleContent,
@@ -55,8 +51,11 @@ import {
   SidebarMenuSubItem,
   SidebarRail,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { DynamicBreadcrumbs } from "./DynamicBreadcrumbs";
+import { MenuItemInfo } from "./MenuItemInfo";
+import { MenuAvatar } from "./MenuAvatar";
 
 const data = {
   user: {
@@ -67,7 +66,7 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "/",
+      url: "/dashboard",
       icon: SquareTerminal,
     },
     {
@@ -153,13 +152,27 @@ const data = {
   ],
 };
 
+interface CustomSidebarProps {
+  children: React.ReactNode;
+  name: string;
+  picture: string | null;
+  email: string;
+}
+
 export default function CustomSidebar({
   children,
-}: {
-  children: React.ReactNode;
-}) {
+  name,
+  picture,
+  email,
+}: CustomSidebarProps) {
   const { theme, setTheme } = useTheme();
+  const { state } = useSidebar();
   const pathname = usePathname();
+
+  const isActive = (url: string) => {
+    if (url === "/dashboard" && pathname === "/") return true;
+    return pathname.startsWith(url);
+  };
 
   return (
     <>
@@ -186,25 +199,60 @@ export default function CustomSidebar({
                 <Collapsible
                   key={item.title}
                   asChild
-                  defaultOpen={pathname.startsWith(item.url)}
+                  defaultOpen={isActive(item.url)}
                   className="group/collapsible"
                 >
                   <SidebarMenuItem>
                     <CollapsibleTrigger asChild>
-                      <SidebarMenuButton tooltip={item.title}>
-                        {item.icon && <item.icon />}
-                        <span>{item.title}</span>
-                        {item.items && (
-                          <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                        )}
-                      </SidebarMenuButton>
+                      {state == "collapsed" ? (
+                        <Link href={item.url}>
+                          <SidebarMenuButton
+                            tooltip={item.title}
+                            className={
+                              isActive(item.url)
+                                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                                : ""
+                            }
+                          >
+                            <MenuItemInfo
+                              icon={item.icon}
+                              title={item.title}
+                              url={item.url}
+                              items={item.items}
+                            />
+                          </SidebarMenuButton>
+                        </Link>
+                      ) : (
+                        <SidebarMenuButton
+                          tooltip={item.title}
+                          className={
+                            isActive(item.url)
+                              ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                              : ""
+                          }
+                        >
+                          <MenuItemInfo
+                            icon={item.icon}
+                            title={item.title}
+                            url={item.url}
+                            items={item.items}
+                          />
+                        </SidebarMenuButton>
+                      )}
                     </CollapsibleTrigger>
                     {item.items && (
                       <CollapsibleContent>
                         <SidebarMenuSub>
                           {item.items.map((subItem) => (
                             <SidebarMenuSubItem key={subItem.title}>
-                              <SidebarMenuSubButton asChild>
+                              <SidebarMenuSubButton
+                                asChild
+                                className={
+                                  isActive(subItem.url)
+                                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                                    : ""
+                                }
+                              >
                                 <Link href={subItem.url}>
                                   <span>{subItem.title}</span>
                                 </Link>
@@ -224,7 +272,15 @@ export default function CustomSidebar({
               <SidebarMenu>
                 {data.navSecondary.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild size="sm">
+                    <SidebarMenuButton
+                      asChild
+                      size="sm"
+                      className={
+                        isActive(item.url)
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                          : ""
+                      }
+                    >
                       <Link href={item.url}>
                         <item.icon />
                         <span>{item.title}</span>
@@ -245,20 +301,10 @@ export default function CustomSidebar({
                     size="lg"
                     className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                   >
-                    <Avatar className="h-8 w-8 rounded-lg">
-                      <AvatarImage
-                        src={data.user.avatar}
-                        alt={data.user.name}
-                      />
-                      <AvatarFallback className="rounded-lg">JD</AvatarFallback>
-                    </Avatar>
+                    <MenuAvatar name={name} picture={picture} />
                     <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-semibold">
-                        {data.user.name}
-                      </span>
-                      <span className="truncate text-xs">
-                        {data.user.email}
-                      </span>
+                      <span className="truncate font-semibold">{name}</span>
+                      <span className="truncate text-xs">{email}</span>
                     </div>
                     <ChevronsUpDown className="ml-auto size-4" />
                   </SidebarMenuButton>
@@ -271,22 +317,10 @@ export default function CustomSidebar({
                 >
                   <DropdownMenuLabel className="p-0 font-normal">
                     <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                      <Avatar className="h-8 w-8 rounded-lg">
-                        <AvatarImage
-                          src={data.user.avatar}
-                          alt={data.user.name}
-                        />
-                        <AvatarFallback className="rounded-lg">
-                          JD
-                        </AvatarFallback>
-                      </Avatar>
+                      <MenuAvatar name={name} picture={picture} />
                       <div className="grid flex-1 text-left text-sm leading-tight">
-                        <span className="truncate font-semibold">
-                          {data.user.name}
-                        </span>
-                        <span className="truncate text-xs">
-                          {data.user.email}
-                        </span>
+                        <span className="truncate font-semibold">{name}</span>
+                        <span className="truncate text-xs">{email}</span>
                       </div>
                     </div>
                   </DropdownMenuLabel>

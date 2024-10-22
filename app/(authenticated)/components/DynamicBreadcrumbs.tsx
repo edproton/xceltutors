@@ -3,7 +3,6 @@ import {
   BreadcrumbList,
   BreadcrumbItem,
   BreadcrumbLink,
-  BreadcrumbSeparator,
   BreadcrumbPage,
 } from "@/components/ui/breadcrumb";
 import { ChevronRight } from "lucide-react";
@@ -45,20 +44,16 @@ export function DynamicBreadcrumbs() {
           const name = formatSegmentName(routeNameMap[segment] || segment);
 
           return (
-            <React.Fragment key={url}>
-              <BreadcrumbItem>
-                {isLast ? (
-                  <BreadcrumbPage>{name}</BreadcrumbPage>
-                ) : (
-                  <>
-                    <BreadcrumbLink href={url}>{name}</BreadcrumbLink>
-                    <BreadcrumbSeparator>
-                      <ChevronRight className="h-4 w-4" />
-                    </BreadcrumbSeparator>
-                  </>
-                )}
-              </BreadcrumbItem>
-            </React.Fragment>
+            <BreadcrumbItem key={url}>
+              {isLast ? (
+                <BreadcrumbPage>{name}</BreadcrumbPage>
+              ) : (
+                <>
+                  <BreadcrumbLink href={url}>{name}</BreadcrumbLink>
+                  <ChevronRight className="h-4 w-4 mx-2" />
+                </>
+              )}
+            </BreadcrumbItem>
           );
         })}
       </BreadcrumbList>
