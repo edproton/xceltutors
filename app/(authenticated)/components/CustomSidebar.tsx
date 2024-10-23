@@ -51,12 +51,11 @@ import { DynamicBreadcrumbs } from "./DynamicBreadcrumbs";
 import { MenuItemInfo } from "./MenuItemInfo";
 import { MenuAvatar } from "./MenuAvatar";
 import { navigationData } from "./data";
-import { RoleType } from "@/db/schemas/roleSchema";
-import { UserWithRoles } from "../dashboard/actions";
+import { RoleType, SelectRole } from "@/db/schemas/roleSchema";
+import { useUser } from "@/providers/user-provider";
 
 interface CustomSidebarProps {
   children: React.ReactNode;
-  user: UserWithRoles;
 }
 
 type MenuItem = {
@@ -70,55 +69,19 @@ type MenuItem = {
   }[];
 };
 
-// const renderSidebarMenuItem = (
-//   state: "expanded" | "collapsed",
-//   isActive: boolean,
-//   item: MenuItem,
-//   user: UserWithRoles
-// ) => {
-//   if (item.roles?.length) {
-//     if (!user.roles.some((userRole) => item.roles?.includes(userRole.name))) {
-//       return null;
-//     }
-//   }
-
-//   const baseMenu = (
-//     <SidebarMenuButton
-//       tooltip={item.title}
-//       className={
-//         isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""
-//       }
-//     >
-//       <MenuItemInfo
-//         icon={item.icon}
-//         title={item.title}
-//         url={item.url}
-//         items={item.items}
-//       />
-//     </SidebarMenuButton>
-//   );
-
-//   if (state === "collapsed" || !item.items) {
-//     return <Link href={item.url}>{baseMenu}</Link>;
-//   }
-//   if (state === "expanded") {
-//     return baseMenu;
-//   }
-// };
-
-const hasRequiredRoles = (user: UserWithRoles, roles?: RoleType[]) => {
+const hasRequiredRoles = (userRoles: SelectRole[], roles?: RoleType[]) => {
   if (!roles?.length) return true;
-  return user.roles.some((userRole) => roles.includes(userRole.name));
+  return userRoles.some((userRole) => roles.includes(userRole.name));
 };
 
 const renderSidebarMenuItem = (
   state: "expanded" | "collapsed",
   isActive: boolean,
   item: MenuItem,
-  user: UserWithRoles
+  roles: SelectRole[]
 ) => {
   // Check main item roles
-  if (!hasRequiredRoles(user, item.roles)) {
+  if (!hasRequiredRoles(roles, item.roles)) {
     return null;
   }
 
@@ -146,7 +109,7 @@ const renderSidebarMenuItem = (
   }
 };
 
-const CustomSidebarMenu = ({ user }: { user: UserWithRoles }) => {
+const CustomSidebarMenu = ({ roles }: { roles: SelectRole[] }) => {
   const { state } = useSidebar();
   const pathname = usePathname();
   const isActive = (url: string) => pathname.startsWith(url);
@@ -158,13 +121,13 @@ const CustomSidebarMenu = ({ user }: { user: UserWithRoles }) => {
         <SidebarMenu>
           {navigationData.navMain.map((item) => {
             // Skip if user doesn't have required roles for main item
-            if (!hasRequiredRoles(user, item.roles)) {
+            if (!hasRequiredRoles(roles, item.roles)) {
               return null;
             }
 
             // Filter sub-items based on roles
             const filteredSubItems = item.items?.filter((subItem) =>
-              hasRequiredRoles(user, subItem.roles)
+              hasRequiredRoles(roles, subItem.roles)
             );
 
             // If no sub-items left after filtering and main item has items,
@@ -189,7 +152,7 @@ const CustomSidebarMenu = ({ user }: { user: UserWithRoles }) => {
                       state,
                       isActive(item.url),
                       item,
-                      user
+                      roles
                     )}
                   </CollapsibleTrigger>
                   {filteredSubItems && filteredSubItems.length > 0 && (
@@ -248,8 +211,9 @@ const CustomSidebarMenu = ({ user }: { user: UserWithRoles }) => {
   );
 };
 
-export default function CustomSidebar({ children, user }: CustomSidebarProps) {
+export default function CustomSidebar({ children }: CustomSidebarProps) {
   const { theme, setTheme } = useTheme();
+  const { user, roles } = useUser();
 
   const { picture, email } = user;
   const name = `${user.firstName} ${user.lastName}`;
@@ -272,77 +236,7 @@ export default function CustomSidebar({ children, user }: CustomSidebarProps) {
           </SidebarMenu>
         </SidebarHeader>
         <SidebarContent>
-          {/* <SidebarGroup> */}
-          {/* <SidebarGroupLabel>Platform</SidebarGroupLabel> */}
-          <CustomSidebarMenu user={user} />
-          {/* <SidebarMenu>
-              {navigationData.navMain.map((item) => (
-                <Collapsible
-                  key={item.title}
-                  asChild
-                  defaultOpen={isActive(item.url)}
-                  className="group/collapsible"
-                >
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                      {renderSidebarMenuItem(
-                        state,
-                        isActive(item.url),
-                        item,
-                        user
-                      )}
-                    </CollapsibleTrigger>
-                    {item.items && (
-                      <CollapsibleContent>
-                        <SidebarMenuSub>
-                          {item.items.map((subItem) => (
-                            <SidebarMenuSubItem key={subItem.title}>
-                              <SidebarMenuSubButton
-                                asChild
-                                className={
-                                  isActive(subItem.url)
-                                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                                    : ""
-                                }
-                              >
-                                <Link href={subItem.url}>
-                                  <span>{subItem.title}</span>
-                                </Link>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          ))}
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
-                    )}
-                  </SidebarMenuItem>
-                </Collapsible>
-              ))}
-            </SidebarMenu> */}
-          {/* </SidebarGroup> */}
-          {/* <SidebarGroup className="mt-auto">
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {navigationData.navSecondary.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      size="sm"
-                      className={
-                        isActive(item.url)
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                          : ""
-                      }
-                    >
-                      <Link href={item.url}>
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup> */}
+          <CustomSidebarMenu roles={roles} />
         </SidebarContent>
         <SidebarFooter>
           <SidebarMenu>

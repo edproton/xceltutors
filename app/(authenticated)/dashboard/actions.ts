@@ -8,10 +8,6 @@ import { sessionTable } from "@/db/schemas/sessionSchema";
 import { getCurrentSession } from "@/lib/utils/cookiesUtils";
 import { roleTable, SelectRole, userRoleTable } from "@/db/schemas/roleSchema";
 
-export interface UserWithRoles extends SelectUser {
-  roles: SelectRole[];
-}
-
 export async function getUserRoles(userId: number): Promise<SelectRole[]> {
   try {
     const roles = db
@@ -28,7 +24,21 @@ export async function getUserRoles(userId: number): Promise<SelectRole[]> {
   }
 }
 
-export const getUserBySession = cache(async () => {
+// Session info type
+export type SessionInfo = {
+  id: string;
+  expiresAt: Date;
+};
+
+// Complete session data type
+export type SessionData = {
+  user: SelectUser;
+  roles: SelectRole[];
+  session: SessionInfo;
+};
+
+// Updated getUserBySession with proper return type
+export const getUserBySession = cache(async (): Promise<SessionData> => {
   try {
     const sessionToken = await getCurrentSession();
 
@@ -50,20 +60,16 @@ export const getUserBySession = cache(async () => {
     // Get user roles
     const roles = await getUserRoles(user.id);
 
-    // You might want to return both user and session info
     return {
-      user: {
-        ...result,
-        roles,
-      },
-      session: { id: sessionId, expiresAt: expiresAt },
-    };
+      user: result,
+      roles,
+      session: { id: sessionId, expiresAt },
+    } satisfies SessionData;
   } catch (error) {
     if (error instanceof DomainError) {
-      throw error; // Re-throw domain errors
+      throw error;
     }
 
-    // Log the error for debugging purposes
     console.error("Error in getUserBySession:", error);
     throw new DomainError(Errors.User.NotFound);
   }

@@ -245,7 +245,6 @@ export default function UserTable({ users }: { users: SelectUser[] }) {
     if (result.isSuccess) {
       toast({
         title: "Success",
-        variant: "default",
         description: `User ${userToToggle.email} ${
           userToToggle.isActive ? "deactivated" : "activated"
         } successfully`,
