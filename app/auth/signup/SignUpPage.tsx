@@ -81,7 +81,7 @@ export default function SignUpPage() {
           {!showEmailForm ? (
             <Providers
               onEmailClick={() => setShowEmailForm(true)}
-              authType="signin"
+              authType="signup"
             />
           ) : (
             <motion.div
