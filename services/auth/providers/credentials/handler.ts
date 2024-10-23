@@ -18,7 +18,7 @@ import {
   credentialsSignInSchema,
   CredentialsSignInSchema,
 } from "./schemas/signInSchema";
-import { ProviderType } from "../oauthHandler";
+import { AuthProvider } from "../types";
 
 export interface AuthResult {
   token: string;
@@ -140,7 +140,7 @@ export async function credentialsSignIn(
     user.id,
     requestData.userAgent,
     requestData.ipAddress,
-    ProviderType.Discord
+    AuthProvider.Discord
   );
 
   return {

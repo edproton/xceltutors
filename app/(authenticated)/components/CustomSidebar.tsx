@@ -51,8 +51,9 @@ import { DynamicBreadcrumbs } from "./DynamicBreadcrumbs";
 import { MenuItemInfo } from "./MenuItemInfo";
 import { MenuAvatar } from "./MenuAvatar";
 import { navigationData } from "./data";
-import { RoleType, SelectRole } from "@/db/schemas/roleSchema";
+import { RoleType } from "@/db/schemas/roleSchema";
 import { useUser } from "@/providers/user-provider";
+import { UserRoles } from "../dashboard/actions";
 
 interface CustomSidebarProps {
   children: React.ReactNode;
@@ -69,7 +70,7 @@ type MenuItem = {
   }[];
 };
 
-const hasRequiredRoles = (userRoles: SelectRole[], roles?: RoleType[]) => {
+const hasRequiredRoles = (userRoles: UserRoles, roles?: RoleType[]) => {
   if (!roles?.length) return true;
   return userRoles.some((userRole) => roles.includes(userRole.name));
 };
@@ -78,7 +79,7 @@ const renderSidebarMenuItem = (
   state: "expanded" | "collapsed",
   isActive: boolean,
   item: MenuItem,
-  roles: SelectRole[]
+  roles: UserRoles
 ) => {
   // Check main item roles
   if (!hasRequiredRoles(roles, item.roles)) {
@@ -109,7 +110,7 @@ const renderSidebarMenuItem = (
   }
 };
 
-const CustomSidebarMenu = ({ roles }: { roles: SelectRole[] }) => {
+const CustomSidebarMenu = ({ roles }: { roles: UserRoles }) => {
   const { state } = useSidebar();
   const pathname = usePathname();
   const isActive = (url: string) => pathname.startsWith(url);

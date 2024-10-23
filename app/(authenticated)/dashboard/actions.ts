@@ -6,14 +6,19 @@ import { db } from "@/db";
 import { SelectUser, userTable } from "@/db/schemas/userSchema";
 import { sessionTable } from "@/db/schemas/sessionSchema";
 import { getCurrentSession } from "@/lib/utils/cookiesUtils";
-import { roleTable, SelectRole, userRoleTable } from "@/db/schemas/roleSchema";
+import { roleTable, RoleType, userRoleTable } from "@/db/schemas/roleSchema";
 
-export async function getUserRoles(userId: number): Promise<SelectRole[]> {
+export type UserRoles = {
+  id: number;
+  name: RoleType;
+}[];
+
+export async function getUserRoles(userId: number): Promise<UserRoles> {
   try {
     const roles = db
       .selectFrom(roleTable)
       .innerJoin(userRoleTable, "role.id", "userRole.roleId")
-      .selectAll()
+      .select(["role.id", "role.name"])
       .where("userRole.userId", "=", userId)
       .execute();
 
@@ -24,20 +29,17 @@ export async function getUserRoles(userId: number): Promise<SelectRole[]> {
   }
 }
 
-// Session info type
 export type SessionInfo = {
   id: string;
   expiresAt: Date;
 };
 
-// Complete session data type
 export type SessionData = {
   user: SelectUser;
-  roles: SelectRole[];
+  roles: UserRoles;
   session: SessionInfo;
 };
 
-// Updated getUserBySession with proper return type
 export const getUserBySession = cache(async (): Promise<SessionData> => {
   try {
     const sessionToken = await getCurrentSession();
@@ -71,6 +73,6 @@ export const getUserBySession = cache(async (): Promise<SessionData> => {
     }
 
     console.error("Error in getUserBySession:", error);
-    throw new DomainError(Errors.User.NotFound);
+    throw new Error("Error in getUserBySession");
   }
 });

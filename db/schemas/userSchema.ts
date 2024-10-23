@@ -3,8 +3,8 @@ import { Generated, Insertable, Selectable } from "kysely";
 export const userTable = "user";
 
 export enum UserType {
-  tutor = "tutor",
-  student = "student",
+  Tutor = "tutor",
+  Student = "student",
 }
 
 export interface UserTable {

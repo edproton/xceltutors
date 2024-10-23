@@ -4,7 +4,6 @@ import { db } from "@/db";
 import { userTable } from "@/db/schemas/userSchema";
 import { wrapDomainError } from "@/lib/utils/actionUtils";
 import { revalidatePath } from "next/cache";
-import { getUserBySession } from "../../dashboard/actions";
 import { DomainError } from "@/services/domainError";
 
 export const getUsersAction = async () => {
@@ -14,23 +13,23 @@ export const getUsersAction = async () => {
 };
 
 export const toggleUserStatusAction = async (
-  userId: number,
+  currentUserId: number,
+  targetUserId: number,
   status: boolean
 ) => {
   return wrapDomainError(async () => {
-    if (!userId) {
+    if (!targetUserId) {
       throw new Error("User ID is required");
     }
 
-    const session = await getUserBySession();
-    if (session.user.id == userId) {
+    if (currentUserId == targetUserId) {
       throw new DomainError("You can't deactive yourself");
     }
 
     await db
       .updateTable(userTable)
       .set({ isActive: status })
-      .where("id", "=", userId)
+      .where("id", "=", targetUserId)
       .execute();
 
     revalidatePath("/users");

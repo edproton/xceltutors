@@ -1,4 +1,4 @@
-import { ProviderType } from "@/services/auth/providers/oauthHandler";
+import { AuthProvider } from "@/services/auth/providers/types";
 import { Insertable, Selectable } from "kysely";
 
 export const sessionTable = "session";
@@ -9,7 +9,7 @@ export interface SessionTable {
   expiresAt: Date;
   userAgent: string;
   ipAddress: string;
-  providerType: ProviderType;
+  providerType: AuthProvider;
 }
 
 export type NewSession = Insertable<SessionTable>;

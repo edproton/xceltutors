@@ -49,7 +49,6 @@ export default function ConfirmEmailPage({ params }: ConfirmEmailPageProps) {
 
   useEffect(() => {
     if (verifyToken) {
-      console.log(verifyToken);
       confirmEmailMutation.mutate();
     }
   }, [verifyToken]);

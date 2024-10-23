@@ -1,6 +1,9 @@
 import { DomainError, Errors } from "@/services/domainError";
 
-type ErrorValues = typeof Errors extends Record<string, Record<string, infer V>>
+export type ErrorValues = typeof Errors extends Record<
+  string,
+  Record<string, infer V>
+>
   ? V
   : never;
 
@@ -35,6 +38,7 @@ export const wrapDomainError = async <T>(
       error: null,
     } as const satisfies DomainSuccessResponse<T>;
   } catch (error) {
+    console.error(error);
     return {
       status: false,
       isSuccess: false,

@@ -104,6 +104,7 @@ export const navigationData: NavigationData = {
           url: "/admin/sessions",
         },
       ],
+      roles: [RoleType.Admin],
     },
   ],
   navSecondary: [

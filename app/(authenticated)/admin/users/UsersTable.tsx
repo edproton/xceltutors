@@ -239,6 +239,7 @@ export default function UserTable({ users }: { users: SelectUser[] }) {
     if (!userToToggle) return;
 
     const result = await toggleUserStatusAction(
+      currentUser.id,
       userToToggle.id,
       !userToToggle.isActive
     );
@@ -256,7 +257,7 @@ export default function UserTable({ users }: { users: SelectUser[] }) {
         description: result.error,
       });
     }
-  }, [toast, userToToggle]);
+  }, [toast, userToToggle, currentUser.id]);
 
   const handleFilterChange = useCallback((key: string, value: string) => {
     setFiltering((prev) => ({ ...prev, [key]: value }));

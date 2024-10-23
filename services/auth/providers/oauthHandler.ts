@@ -2,12 +2,7 @@ import { db } from "@/db";
 import { NewUser, userTable } from "@/db/schemas/userSchema";
 import { DomainError, Errors } from "@/services/domainError";
 import { createSession, generateSessionToken } from "@/services/sessionService";
-
-export enum ProviderType {
-  Credentials = "credentials",
-  Google = "google",
-  Discord = "discord",
-}
+import { AuthProvider } from "./types";
 
 export interface AuthResult {
   token: string;
@@ -22,22 +17,22 @@ export interface OAuthClaims {
 }
 
 type ProviderIdField = {
-  [K in Exclude<ProviderType, ProviderType.Credentials>]: string;
+  [K in Exclude<AuthProvider, AuthProvider.Credentials>]: string;
 };
 
 const providerIdFields: ProviderIdField = {
-  [ProviderType.Google]: "googleId",
-  [ProviderType.Discord]: "discordId",
+  [AuthProvider.Google]: "googleId",
+  [AuthProvider.Discord]: "discordId",
 };
 
 function getIdField(
-  providerType: Exclude<ProviderType, ProviderType.Credentials>
+  providerType: Exclude<AuthProvider, AuthProvider.Credentials>
 ): string {
   return providerIdFields[providerType];
 }
 
 async function findUserByProviderId(
-  providerType: Exclude<ProviderType, ProviderType.Credentials>,
+  providerType: Exclude<AuthProvider, AuthProvider.Credentials>,
   providerId: string
 ) {
   const { ref } = db.dynamic;
@@ -77,7 +72,7 @@ async function createUser(newUser: NewUser) {
 
 async function createAuthResult(
   userId: number,
-  providerType: ProviderType,
+  providerType: AuthProvider,
   ipAddress: string,
   userAgent: string
 ): Promise<AuthResult> {
@@ -95,7 +90,7 @@ async function createAuthResult(
 
 export async function oauthSignIn(
   claims: OAuthClaims,
-  providerType: Exclude<ProviderType, ProviderType.Credentials>,
+  providerType: Exclude<AuthProvider, AuthProvider.Credentials>,
   ipAddress: string,
   userAgent: string
 ): Promise<AuthResult> {

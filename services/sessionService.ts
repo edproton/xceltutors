@@ -11,7 +11,7 @@ import {
   sessionTable,
   NewSession,
 } from "@/db/schemas/sessionSchema";
-import { ProviderType } from "./auth/providers/oauthHandler";
+import { AuthProvider } from "./auth/providers/types";
 
 export function generateSessionToken(): string {
   const bytes = new Uint8Array(20);
@@ -25,7 +25,7 @@ export async function createSession(
   userId: number,
   userAgent: string,
   ipAddress: string,
-  providerType: ProviderType
+  providerType: AuthProvider
 ): Promise<SelectSession> {
   const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
