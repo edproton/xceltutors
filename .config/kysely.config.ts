@@ -2,7 +2,7 @@ import { Pool } from "pg";
 import { PostgresDialect } from "kysely";
 import { defineConfig } from "kysely-ctl";
 import path from "path";
-import { env } from "../lib/env.mjs";
+import { env } from "../lib/env";
 
 export default defineConfig({
   dialect: new PostgresDialect({

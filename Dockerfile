@@ -11,7 +11,7 @@ RUN npm install -g pnpm@9.12.2
 # Copy package files for dependency installation
 COPY package.json pnpm-lock.yaml ./
 
-# Install dependencies with strict lockfile and frozen mode
+# Install ALL dependencies including devDependencies
 RUN pnpm install --frozen-lockfile --prod=false
 
 # Stage 2: Builder
@@ -39,7 +39,7 @@ RUN pnpm build
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-# Install production dependencies only
+# Install production dependencies and PostgreSQL client
 RUN apk add --no-cache postgresql-client && \
     npm install -g pnpm@9.12.2
 
@@ -61,6 +61,14 @@ COPY --from=builder --chown=nextjs:nodejs /app/lib ./lib
 COPY --from=builder --chown=nextjs:nodejs /app/db ./db
 COPY --from=builder --chown=nextjs:nodejs /app/.config ./.config
 
+# Install kysely-ctl specifically in the runner stage
+RUN pnpm add -D kysely-ctl
+
+# Create startup script that parses DATABASE_URL
+COPY start.sh /app/start.sh
+RUN chmod +x /app/start.sh && \
+    chown nextjs:nodejs /app/start.sh
+
 # Set runtime environment
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -76,5 +84,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
 
-# Start the application
-CMD ["pnpm", "start"]
+# Start using the new script
+CMD ["/app/start.sh"]
