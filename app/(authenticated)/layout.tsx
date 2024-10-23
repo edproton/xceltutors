@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import CustomSidebar from "./components/CustomSidebar";
 import { getUserBySession } from "./dashboard/actions";
+import { UserProvider } from "@/providers/user-provider";
 
 export const metadata: Metadata = {
   title: "XcelTutors",
@@ -20,9 +21,11 @@ export default async function RootLayout({
   return (
     <>
       <div className="flex h-screen overflow-hidden">
-        <SidebarProvider>
-          <CustomSidebar user={user}>{children}</CustomSidebar>
-        </SidebarProvider>
+        <UserProvider initialUser={user}>
+          <SidebarProvider>
+            <CustomSidebar user={user}>{children}</CustomSidebar>
+          </SidebarProvider>
+        </UserProvider>
       </div>
     </>
   );

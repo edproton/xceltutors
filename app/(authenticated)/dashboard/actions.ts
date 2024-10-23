@@ -62,6 +62,7 @@ export const getUserBySession = cache(async () => {
     if (error instanceof DomainError) {
       throw error; // Re-throw domain errors
     }
+
     // Log the error for debugging purposes
     console.error("Error in getUserBySession:", error);
     throw new DomainError(Errors.User.NotFound);

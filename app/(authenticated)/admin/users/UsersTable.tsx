@@ -64,6 +64,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toggleUserStatusAction } from "./actions";
+import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/providers/user-provider";
 
 // Types
 interface FilterInputProps {
@@ -73,7 +76,8 @@ interface FilterInputProps {
 }
 
 interface ActionsColumnProps {
-  user: SelectUser;
+  targetUser: SelectUser;
+  currentUser: SelectUser;
   onStatusToggle: (user: SelectUser) => void;
   onViewDetails: (userId: string | number) => void;
 }
@@ -171,7 +175,8 @@ const StatusToggleDialog = ({
 };
 
 const ActionsCell = ({
-  user,
+  targetUser,
+  currentUser,
   onStatusToggle,
   onViewDetails,
 }: ActionsColumnProps) => (
@@ -179,7 +184,7 @@ const ActionsCell = ({
     <DropdownMenuTrigger asChild>
       <Button variant="ghost" className="h-8 w-8 p-0">
         <span className="sr-only">
-          Open menu for user {user.firstName} {user.lastName}
+          Open menu for User {targetUser.firstName} {targetUser.lastName}
         </span>
         <MoreHorizontal className="h-4 w-4" />
       </Button>
@@ -187,22 +192,25 @@ const ActionsCell = ({
     <DropdownMenuContent align="end" className="w-[160px]">
       <DropdownMenuLabel>Actions</DropdownMenuLabel>
       <DropdownMenuItem
-        onClick={() => onViewDetails(user.id)}
+        onClick={() => onViewDetails(targetUser.id)}
         className="cursor-pointer"
       >
         View Details
       </DropdownMenuItem>
-      <DropdownMenuItem
-        onClick={() => onStatusToggle(user)}
-        className="cursor-pointer"
-      >
-        {user.isActive ? "Deactivate" : "Activate"} User
-      </DropdownMenuItem>
+      {currentUser.id !== targetUser.id && (
+        <DropdownMenuItem
+          onClick={() => onStatusToggle(targetUser)}
+          className="cursor-pointer"
+        >
+          {targetUser.isActive ? "Deactivate" : "Activate"} User
+        </DropdownMenuItem>
+      )}
     </DropdownMenuContent>
   </DropdownMenu>
 );
 
 export default function UserTable({ users }: { users: SelectUser[] }) {
+  const { toast } = useToast();
   const router = useRouter();
   const [filtering, setFiltering] = useState({
     id: "",
@@ -220,6 +228,7 @@ export default function UserTable({ users }: { users: SelectUser[] }) {
   });
   const [sorting, setSorting] = useState<SortingState>([]);
   const [userToToggle, setUserToToggle] = useState<SelectUser | null>(null);
+  const { user: currentUser } = useUser();
 
   const handleViewDetails = useCallback(
     (userId: string | number) => router.push(`/admin/users/${userId}`),
@@ -228,17 +237,27 @@ export default function UserTable({ users }: { users: SelectUser[] }) {
 
   const handleStatusToggle = useCallback(async () => {
     if (!userToToggle) return;
-    try {
-      console.log(
-        `Toggling status for user ${
-          userToToggle.id
-        } to ${!userToToggle.isActive}`
-      );
-      setUserToToggle(null);
-    } catch (error) {
-      console.error("Failed to toggle user status:", error);
+
+    const result = await toggleUserStatusAction(
+      userToToggle.id,
+      !userToToggle.isActive
+    );
+    if (result.isSuccess) {
+      toast({
+        title: "Success",
+        variant: "default",
+        description: `User ${userToToggle.email} ${
+          userToToggle.isActive ? "deactivated" : "activated"
+        } successfully`,
+      });
+    } else {
+      toast({
+        title: "Error",
+        variant: "destructive",
+        description: result.error,
+      });
     }
-  }, [userToToggle]);
+  }, [toast, userToToggle]);
 
   const handleFilterChange = useCallback((key: string, value: string) => {
     setFiltering((prev) => ({ ...prev, [key]: value }));
@@ -283,8 +302,14 @@ export default function UserTable({ users }: { users: SelectUser[] }) {
       {
         accessorKey: "id",
         header: ({ column }) => <SortButton column={column}>ID</SortButton>,
-        cell: ({ row }) =>
-          row.getValue("id") ?? <Badge variant="outline">Unknown</Badge>,
+        cell: ({ row }) => (
+          <div className="flex items-center gap-2">
+            {row.getValue("id")}
+            {row.getValue("id") === currentUser.id && (
+              <Badge variant="default">Me</Badge>
+            )}
+          </div>
+        ),
         enableHiding: true,
       },
       {
@@ -376,7 +401,8 @@ export default function UserTable({ users }: { users: SelectUser[] }) {
         header: "Actions",
         cell: ({ row }) => (
           <ActionsCell
-            user={row.original}
+            currentUser={currentUser}
+            targetUser={row.original}
             onStatusToggle={setUserToToggle}
             onViewDetails={handleViewDetails}
           />
@@ -384,7 +410,7 @@ export default function UserTable({ users }: { users: SelectUser[] }) {
         enableSorting: false,
       },
     ],
-    [handleViewDetails]
+    [currentUser, handleViewDetails]
   );
 
   const filteredUsers = useMemo(() => {
