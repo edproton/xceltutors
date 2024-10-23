@@ -1,11 +1,11 @@
 import { Generated, Insertable, Selectable } from "kysely";
 
 export const roleTable = "role";
-export const userRoleTable = "user_role";
+export const userRoleTable = "userRole";
 
 export enum RoleType {
-  admin = "admin",
-  moderator = "moderator",
+  Admin = "admin",
+  Moderator = "moderator",
 }
 
 export interface RoleTable {

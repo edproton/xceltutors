@@ -6,19 +6,13 @@ import { useTheme } from "next-themes";
 import {
   BadgeCheck,
   Bell,
-  Calendar,
   ChevronsUpDown,
   CreditCard,
   GalleryVerticalEnd,
-  GraduationCap,
-  LifeBuoy,
   LogOut,
+  LucideIcon,
   Moon,
-  Send,
-  Settings2,
-  SquareTerminal,
   Sun,
-  Users,
 } from "lucide-react";
 import {
   Collapsible,
@@ -56,123 +50,209 @@ import {
 import { DynamicBreadcrumbs } from "./DynamicBreadcrumbs";
 import { MenuItemInfo } from "./MenuItemInfo";
 import { MenuAvatar } from "./MenuAvatar";
-
-const data = {
-  user: {
-    name: "John Doe",
-    email: "john@xceltutors.com",
-    avatar: "/avatars/john-doe.jpg",
-  },
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "/dashboard",
-      icon: SquareTerminal,
-    },
-    {
-      title: "Tutors",
-      url: "/tutors",
-      icon: GraduationCap,
-      items: [
-        {
-          title: "All Tutors",
-          url: "/tutors",
-        },
-        {
-          title: "Tutor Applications",
-          url: "/tutors/applications",
-        },
-        {
-          title: "Tutor Ratings",
-          url: "/tutors/ratings",
-        },
-      ],
-    },
-    {
-      title: "Students",
-      url: "/students",
-      icon: Users,
-      items: [
-        {
-          title: "All Students",
-          url: "/students",
-        },
-        {
-          title: "Student Progress",
-          url: "/students/progress",
-        },
-      ],
-    },
-    {
-      title: "Sessions",
-      url: "/sessions",
-      icon: Calendar,
-      items: [
-        {
-          title: "Upcoming Sessions",
-          url: "/sessions/upcoming",
-        },
-        {
-          title: "Past Sessions",
-          url: "/sessions/past",
-        },
-        {
-          title: "Session Reports",
-          url: "/sessions/reports",
-        },
-      ],
-    },
-    {
-      title: "Admin",
-      url: "/admin",
-      icon: Settings2,
-      items: [
-        {
-          title: "Users",
-          url: "/admin/users",
-        },
-        {
-          title: "Sessions",
-          url: "/admin/sessions",
-        },
-      ],
-    },
-  ],
-  navSecondary: [
-    {
-      title: "Support",
-      url: "/support",
-      icon: LifeBuoy,
-    },
-    {
-      title: "Feedback",
-      url: "/feedback",
-      icon: Send,
-    },
-  ],
-};
+import { navigationData } from "./data";
+import { RoleType } from "@/db/schemas/roleSchema";
+import { UserWithRoles } from "../dashboard/actions";
 
 interface CustomSidebarProps {
   children: React.ReactNode;
-  name: string;
-  picture: string | null;
-  email: string;
+  user: UserWithRoles;
 }
 
-export default function CustomSidebar({
-  children,
-  name,
-  picture,
-  email,
-}: CustomSidebarProps) {
-  const { theme, setTheme } = useTheme();
+type MenuItem = {
+  title: string;
+  url: string;
+  icon: LucideIcon;
+  roles?: RoleType[];
+  items?: {
+    title: string;
+    url: string;
+  }[];
+};
+
+// const renderSidebarMenuItem = (
+//   state: "expanded" | "collapsed",
+//   isActive: boolean,
+//   item: MenuItem,
+//   user: UserWithRoles
+// ) => {
+//   if (item.roles?.length) {
+//     if (!user.roles.some((userRole) => item.roles?.includes(userRole.name))) {
+//       return null;
+//     }
+//   }
+
+//   const baseMenu = (
+//     <SidebarMenuButton
+//       tooltip={item.title}
+//       className={
+//         isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""
+//       }
+//     >
+//       <MenuItemInfo
+//         icon={item.icon}
+//         title={item.title}
+//         url={item.url}
+//         items={item.items}
+//       />
+//     </SidebarMenuButton>
+//   );
+
+//   if (state === "collapsed" || !item.items) {
+//     return <Link href={item.url}>{baseMenu}</Link>;
+//   }
+//   if (state === "expanded") {
+//     return baseMenu;
+//   }
+// };
+
+const hasRequiredRoles = (user: UserWithRoles, roles?: RoleType[]) => {
+  if (!roles?.length) return true;
+  return user.roles.some((userRole) => roles.includes(userRole.name));
+};
+
+const renderSidebarMenuItem = (
+  state: "expanded" | "collapsed",
+  isActive: boolean,
+  item: MenuItem,
+  user: UserWithRoles
+) => {
+  // Check main item roles
+  if (!hasRequiredRoles(user, item.roles)) {
+    return null;
+  }
+
+  const baseMenu = (
+    <SidebarMenuButton
+      tooltip={item.title}
+      className={
+        isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""
+      }
+    >
+      <MenuItemInfo
+        icon={item.icon}
+        title={item.title}
+        url={item.url}
+        items={item.items}
+      />
+    </SidebarMenuButton>
+  );
+
+  if (state === "collapsed" || !item.items) {
+    return <Link href={item.url}>{baseMenu}</Link>;
+  }
+  if (state === "expanded") {
+    return baseMenu;
+  }
+};
+
+const CustomSidebarMenu = ({ user }: { user: UserWithRoles }) => {
   const { state } = useSidebar();
   const pathname = usePathname();
+  const isActive = (url: string) => pathname.startsWith(url);
 
-  const isActive = (url: string) => {
-    if (url === "/dashboard" && pathname === "/") return true;
-    return pathname.startsWith(url);
-  };
+  return (
+    <>
+      <SidebarGroupLabel>Platform</SidebarGroupLabel>
+      <SidebarGroup>
+        <SidebarMenu>
+          {navigationData.navMain.map((item) => {
+            // Skip if user doesn't have required roles for main item
+            if (!hasRequiredRoles(user, item.roles)) {
+              return null;
+            }
+
+            // Filter sub-items based on roles
+            const filteredSubItems = item.items?.filter((subItem) =>
+              hasRequiredRoles(user, subItem.roles)
+            );
+
+            // If no sub-items left after filtering and main item has items,
+            // skip rendering this menu item completely
+            if (
+              item.items &&
+              (!filteredSubItems || filteredSubItems.length === 0)
+            ) {
+              return null;
+            }
+
+            return (
+              <Collapsible
+                key={item.title}
+                asChild
+                defaultOpen={isActive(item.url)}
+                className="group/collapsible"
+              >
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    {renderSidebarMenuItem(
+                      state,
+                      isActive(item.url),
+                      item,
+                      user
+                    )}
+                  </CollapsibleTrigger>
+                  {filteredSubItems && filteredSubItems.length > 0 && (
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {filteredSubItems.map((subItem) => (
+                          <SidebarMenuSubItem key={subItem.title}>
+                            <SidebarMenuSubButton
+                              asChild
+                              className={
+                                isActive(subItem.url)
+                                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                                  : ""
+                              }
+                            >
+                              <Link href={subItem.url}>
+                                <span>{subItem.title}</span>
+                              </Link>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  )}
+                </SidebarMenuItem>
+              </Collapsible>
+            );
+          })}
+        </SidebarMenu>
+      </SidebarGroup>
+      <SidebarGroup className="mt-auto">
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {navigationData.navSecondary.map((item) => (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton
+                  asChild
+                  size="sm"
+                  className={
+                    isActive(item.url)
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                      : ""
+                  }
+                >
+                  <Link href={item.url}>
+                    <item.icon />
+                    <span>{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    </>
+  );
+};
+
+export default function CustomSidebar({ children, user }: CustomSidebarProps) {
+  const { theme, setTheme } = useTheme();
+
+  const { picture, email } = user;
+  const name = `${user.firstName} ${user.lastName}`;
 
   return (
     <>
@@ -192,10 +272,11 @@ export default function CustomSidebar({
           </SidebarMenu>
         </SidebarHeader>
         <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupLabel>Platform</SidebarGroupLabel>
-            <SidebarMenu>
-              {data.navMain.map((item) => (
+          {/* <SidebarGroup> */}
+          {/* <SidebarGroupLabel>Platform</SidebarGroupLabel> */}
+          <CustomSidebarMenu user={user} />
+          {/* <SidebarMenu>
+              {navigationData.navMain.map((item) => (
                 <Collapsible
                   key={item.title}
                   asChild
@@ -204,40 +285,11 @@ export default function CustomSidebar({
                 >
                   <SidebarMenuItem>
                     <CollapsibleTrigger asChild>
-                      {state == "collapsed" ? (
-                        <Link href={item.url}>
-                          <SidebarMenuButton
-                            tooltip={item.title}
-                            className={
-                              isActive(item.url)
-                                ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                                : ""
-                            }
-                          >
-                            <MenuItemInfo
-                              icon={item.icon}
-                              title={item.title}
-                              url={item.url}
-                              items={item.items}
-                            />
-                          </SidebarMenuButton>
-                        </Link>
-                      ) : (
-                        <SidebarMenuButton
-                          tooltip={item.title}
-                          className={
-                            isActive(item.url)
-                              ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                              : ""
-                          }
-                        >
-                          <MenuItemInfo
-                            icon={item.icon}
-                            title={item.title}
-                            url={item.url}
-                            items={item.items}
-                          />
-                        </SidebarMenuButton>
+                      {renderSidebarMenuItem(
+                        state,
+                        isActive(item.url),
+                        item,
+                        user
                       )}
                     </CollapsibleTrigger>
                     {item.items && (
@@ -265,12 +317,12 @@ export default function CustomSidebar({
                   </SidebarMenuItem>
                 </Collapsible>
               ))}
-            </SidebarMenu>
-          </SidebarGroup>
-          <SidebarGroup className="mt-auto">
+            </SidebarMenu> */}
+          {/* </SidebarGroup> */}
+          {/* <SidebarGroup className="mt-auto">
             <SidebarGroupContent>
               <SidebarMenu>
-                {data.navSecondary.map((item) => (
+                {navigationData.navSecondary.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       asChild
@@ -290,7 +342,7 @@ export default function CustomSidebar({
                 ))}
               </SidebarMenu>
             </SidebarGroupContent>
-          </SidebarGroup>
+          </SidebarGroup> */}
         </SidebarContent>
         <SidebarFooter>
           <SidebarMenu>

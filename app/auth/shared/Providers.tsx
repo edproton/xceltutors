@@ -67,7 +67,7 @@ const providers: Provider[] = [
 
 export default function Providers({ onEmailClick, authType }: ProvidersProps) {
   const actionText = authType === "signup" ? "Sign up" : "Sign in";
-  console.log(actionText);
+
   const ProviderButton = ({ provider }: { provider: Provider }) => (
     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
       <Button variant="outline" className="w-full" asChild>

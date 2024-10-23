@@ -15,21 +15,13 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const {
-    user: { firstName, lastName, email, picture },
-  } = await getUserBySession();
+  const { user } = await getUserBySession();
 
   return (
     <>
       <div className="flex h-screen overflow-hidden">
         <SidebarProvider>
-          <CustomSidebar
-            name={`${firstName} ${lastName}`}
-            email={email}
-            picture={picture}
-          >
-            {children}
-          </CustomSidebar>
+          <CustomSidebar user={user}>{children}</CustomSidebar>
         </SidebarProvider>
       </div>
     </>
