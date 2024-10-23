@@ -203,10 +203,7 @@ export default function HomePage() {
                       },
                     }}
                   >
-                    <Button
-                      variant="outline"
-                      className="text-lg px-6 py-3 bg-green-500 hover:bg-green-600 text-white border-green-500 hover:border-green-600"
-                    >
+                    <Button className="text-lg px-6 py-3 bg-green-500 hover:bg-green-600 text-white border-green-500 hover:border-green-600">
                       <Calendar className="mr-2 h-5 w-5" /> Free Session
                     </Button>
                   </motion.div>
