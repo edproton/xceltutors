@@ -67,6 +67,7 @@ export default function MailTesterForm({ smtpInfo }: MailTesterFormProps) {
     if (result.isSuccess) {
       setSmtpStatus("success");
       setLastPingTime(new Date());
+      console.log(result.error);
     } else {
       setSmtpStatus("error");
       setSmtpError(result.error);
