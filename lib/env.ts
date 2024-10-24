@@ -2,6 +2,8 @@ export interface Env {
   NEXT_PUBLIC_API_URL: string;
   NODE_ENV: "development" | "production" | "test";
   DATABASE_URL: string;
+  EMAIL_PORT: number;
+  EMAIL_HOST: string;
   EMAIL_USER: string;
   EMAIL_PASSWORD: string;
   EMAIL_FROM_NAME: string;

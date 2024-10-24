@@ -5,7 +5,7 @@ import {
   generateVerificationToken,
   verifyToken,
 } from "@/services/token/tokenService";
-import bcrypt from "bcrypt";
+import * as argon2 from "argon2";
 
 import { sendConfirmationEmail } from "@/services/email/emailService";
 import { createSession, generateSessionToken } from "@/services/sessionService";
@@ -61,7 +61,7 @@ export async function credentialsSignUp(requestData: CredentialsSignUpSchema) {
     .limit(1)
     .executeTakeFirst();
 
-  const hashedPassword = await bcrypt.hash(requestData.password, 10);
+  const hashedPassword = await argon2.hash(requestData.password);
 
   if (existingUser) {
     if (existingUser.password) {
@@ -122,10 +122,11 @@ export async function credentialsSignIn(
     throw new DomainError(Errors.Auth.InvalidCredentials);
   }
 
-  const isPasswordValid = await bcrypt.compare(
-    requestData.password,
-    user.password
+  const isPasswordValid = await argon2.verify(
+    user.password,
+    requestData.password
   );
+
   if (!isPasswordValid) {
     throw new DomainError(Errors.Auth.InvalidCredentials);
   }

@@ -1,8 +1,7 @@
 import { Kysely } from "kysely";
-import * as bcrypt from "bcrypt";
+import * as argon2 from "argon2";
 
 export async function seed(db: Kysely<any>): Promise<void> {
-  const SALT_ROUNDS = 12;
   const ROOT_EMAIL = "root@xceltutors.com";
   const ROOT_PASSWORD = "xcel2024!@#"; // Change this password in production
 
@@ -19,7 +18,7 @@ export async function seed(db: Kysely<any>): Promise<void> {
   }
 
   // Hash the password
-  const hashedPassword = await bcrypt.hash(ROOT_PASSWORD, SALT_ROUNDS);
+  const hashedPassword = await argon2.hash(ROOT_PASSWORD);
 
   // Begin a transaction
   await db.transaction().execute(async (trx) => {

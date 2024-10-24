@@ -2,87 +2,86 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 
-# Install build dependencies
-RUN apk add --no-cache python3 make g++
+# Use BuildKit's cache mount for APK cache
+RUN --mount=type=cache,target=/var/cache/apk \
+    apk add --no-cache --virtual .build-deps \
+    python3 \
+    make \
+    g++ \
+    gcc \
+    musl-dev \
+    linux-headers
 
-# Install pnpm
-RUN npm install -g pnpm@9.12.2
-
-# Copy package files for dependency installation
+# Copy package files
 COPY package.json pnpm-lock.yaml ./
 
-# Install ALL dependencies including devDependencies
-RUN pnpm install --frozen-lockfile --prod=false
+# Install pnpm globally first
+RUN --mount=type=cache,target=/root/.npm \
+    npm install -g pnpm@9.12.2
+
+# Then install dependencies with pnpm cache
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile --prod=false
+
+# Remove build dependencies to reduce image size
+RUN apk del .build-deps
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Install pnpm
-RUN npm install -g pnpm@9.12.2
+# Combine RUN commands and use BuildKit cache
+RUN --mount=type=cache,target=/var/cache/apk \
+    apk add --no-cache --virtual .build-deps \
+    python3 make g++ gcc musl-dev linux-headers && \
+    npm install -g pnpm@9.12.2
 
-# Copy dependencies from deps stage
+# Copy only necessary files for building
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/package.json ./package.json
-
-# Copy all source files
 COPY . .
 
-# Set only essential build-time variables
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
+# Set build-time variables and use parallel processing
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    NEXT_SHARP_PATH=/usr/local/lib/node_modules/sharp
 
-# Build the application
-RUN pnpm build
+# Optimize build with cache and parallel processing
+RUN --mount=type=cache,target=/root/.next/cache \
+    --mount=type=cache,target=/root/.pnpm-store \
+    pnpm build && \
+    pnpm prune --prod
 
 # Stage 3: Runner
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-# Install production dependencies and PostgreSQL client
-RUN apk add --no-cache postgresql-client && \
-    npm install -g pnpm@9.12.2
-
-# Create a non-root user
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
-
-# Set working directory permissions
-RUN mkdir .next && \
+# Use multi-line RUN for better caching
+RUN --mount=type=cache,target=/var/cache/apk \
+    apk add --no-cache postgresql-client linux-headers && \
+    addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs && \
+    mkdir .next && \
     chown nextjs:nodejs .next
 
-# Copy all necessary files from builder
-COPY --from=builder --chown=nextjs:nodejs /app/package.json ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
+# Copy only production files
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=nextjs:nodejs /app/components ./components
-COPY --from=builder --chown=nextjs:nodejs /app/next.config.mjs ./
-COPY --from=builder --chown=nextjs:nodejs /app/lib ./lib
-COPY --from=builder --chown=nextjs:nodejs /app/db ./db
-COPY --from=builder --chown=nextjs:nodejs /app/.config ./.config
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./
 
-# Install kysely-ctl specifically in the runner stage
-RUN pnpm add -D kysely-ctl
+# Set secure runtime environment
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000
 
-# Create startup script that parses DATABASE_URL
-COPY start.sh /app/start.sh
-RUN chmod +x /app/start.sh && \
-    chown nextjs:nodejs /app/start.sh
+# Enable production optimizations
+ENV NODE_OPTIONS="--max-old-space-size=256 --max-http-header-size=8192"
 
-# Set runtime environment
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV PORT=3000
-
-# Switch to non-root user
 USER nextjs
-
-# Expose port
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+# More frequent but faster health checks
+HEALTHCHECK --interval=15s --timeout=5s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
 
-# Start using the new script
-CMD ["/app/start.sh"]
+CMD ["node", "server.js"]
