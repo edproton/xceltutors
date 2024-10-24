@@ -3,6 +3,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import CustomSidebar from "./components/CustomSidebar";
 import { getUserBySession } from "./dashboard/actions";
 import { UserProvider } from "@/providers/user-provider";
+import ErrorDialog from "@/components/ui/error-dialog";
 
 export const metadata: Metadata = {
   title: "XcelTutors",
@@ -16,12 +17,16 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const sessionData = await getUserBySession();
+  const sessionDataResult = await getUserBySession();
+
+  if (sessionDataResult.isError) {
+    return <ErrorDialog error={sessionDataResult.error} />;
+  }
 
   return (
     <>
       <div className="flex h-screen overflow-hidden">
-        <UserProvider initialData={sessionData}>
+        <UserProvider initialData={sessionDataResult.data}>
           <SidebarProvider>
             <CustomSidebar>{children}</CustomSidebar>
           </SidebarProvider>

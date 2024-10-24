@@ -3,10 +3,12 @@
 import { cache } from "react";
 import { DomainError, Errors } from "@/services/domainError";
 import { db } from "@/db";
-import { SelectUser, userTable } from "@/db/schemas/userSchema";
+import { userTable } from "@/db/schemas/userSchema";
 import { sessionTable } from "@/db/schemas/sessionSchema";
 import { getCurrentSession } from "@/lib/utils/cookiesUtils";
 import { roleTable, RoleType, userRoleTable } from "@/db/schemas/roleSchema";
+import { SessionData } from "./types";
+import { DomainResponse, wrapDomainError } from "@/lib/utils/actionUtils";
 
 export type UserRoles = {
   id: number;
@@ -29,50 +31,34 @@ export async function getUserRoles(userId: number): Promise<UserRoles> {
   }
 }
 
-export type SessionInfo = {
-  id: string;
-  expiresAt: Date;
-};
+export const getUserBySession = cache(
+  async (): Promise<DomainResponse<SessionData>> => {
+    return wrapDomainError(async () => {
+      const sessionToken = await getCurrentSession();
 
-export type SessionData = {
-  user: SelectUser;
-  roles: UserRoles;
-  session: SessionInfo;
-};
+      const result = await db
+        .selectFrom(sessionTable)
+        .innerJoin(userTable, "user.id", "session.userId")
+        .selectAll("user")
+        .select(["session.id as sessionId", "session.expiresAt"])
+        .where("session.id", "=", sessionToken)
+        .executeTakeFirst();
 
-export const getUserBySession = cache(async (): Promise<SessionData> => {
-  try {
-    const sessionToken = await getCurrentSession();
+      if (!result) {
+        throw new DomainError(Errors.Auth.Unauthenticated);
+      }
 
-    const result = await db
-      .selectFrom(sessionTable)
-      .innerJoin(userTable, "user.id", "session.userId")
-      .selectAll("user")
-      .select(["session.id as sessionId", "session.expiresAt"])
-      .where("session.id", "=", sessionToken)
-      .executeTakeFirst();
+      // Destructure to separate user fields from session fields
+      const { sessionId, expiresAt, ...user } = result;
 
-    if (!result) {
-      throw new DomainError(Errors.Auth.Unauthenticated);
-    }
+      // Get user roles
+      const roles = await getUserRoles(user.id);
 
-    // Destructure to separate user fields from session fields
-    const { sessionId, expiresAt, ...user } = result;
-
-    // Get user roles
-    const roles = await getUserRoles(user.id);
-
-    return {
-      user: result,
-      roles,
-      session: { id: sessionId, expiresAt },
-    } satisfies SessionData;
-  } catch (error) {
-    if (error instanceof DomainError) {
-      throw error;
-    }
-
-    console.error("Error in getUserBySession:", error);
-    throw new Error("Error in getUserBySession");
+      return {
+        user: result,
+        roles,
+        session: { id: sessionId, expiresAt },
+      } satisfies SessionData;
+    });
   }
-});
+);
