@@ -21,7 +21,10 @@ export default function Providers({ onEmailClick, authType }: ProvidersProps) {
   const ProviderButton = ({ provider }: { provider: AuthProviderItem }) => (
     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
       <Button variant="outline" className="w-full" asChild>
-        <Link href={`/auth/providers/${provider.name.toLowerCase()}`}>
+        <Link
+          prefetch={false}
+          href={`/auth/providers/${provider.name.toLowerCase()}`}
+        >
           {provider.icon}
           {actionText} with {provider.name}
         </Link>
