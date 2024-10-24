@@ -78,11 +78,21 @@ const createSignInRedirect = (
   return response;
 };
 
+const getServiceUrl = (request: NextRequest) => {
+  if (process.env.NODE_ENV === "production") {
+    // In production, use internal container networking
+    return "http://localhost:3000";
+  }
+  // For local development
+  return request.nextUrl.origin;
+};
+
 export async function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
 
   // 1. Early returns for special routes
   if (isAuthProviderRoute(pathname)) {
+    // For OAuth routes, don't add any middleware processing
     return NextResponse.next();
   }
 
@@ -108,7 +118,7 @@ export async function middleware(request: NextRequest) {
 
     try {
       const sessionResponse = await fetch(
-        `http://host.docker.internal:3000/api/auth/validate-session`,
+        `${getServiceUrl(request)}/api/auth/validate-session`,
         {
           headers: {
             Cookie: `session=${sessionToken}`,
@@ -129,6 +139,7 @@ export async function middleware(request: NextRequest) {
         return createSignInRedirect(request, errorData.type);
       }
     } catch (error) {
+      console.error("Public route validation error:", error);
       return NextResponse.next();
     }
 
@@ -150,7 +161,7 @@ export async function middleware(request: NextRequest) {
   // 5. Session Validation
   try {
     const sessionResponse = await fetch(
-      `${request.nextUrl.origin}/api/auth/validate-session`,
+      `${getServiceUrl(request)}/api/auth/validate-session`,
       {
         headers: {
           Cookie: `session=${sessionToken}`,
