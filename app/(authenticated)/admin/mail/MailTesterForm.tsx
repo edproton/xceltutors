@@ -46,6 +46,7 @@ export default function MailTesterForm({ smtpInfo }: MailTesterFormProps) {
   const [smtpStatus, setSmtpStatus] = useState<"loading" | "success" | "error">(
     "loading"
   );
+  const [smtpError, setSmtpError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastPingTime, setLastPingTime] = useState<Date | null>(null);
 
@@ -60,12 +61,15 @@ export default function MailTesterForm({ smtpInfo }: MailTesterFormProps) {
 
   const pingSmtpServer = async () => {
     setSmtpStatus("loading");
-    try {
-      const result = await pingSmtpServerAction();
-      setSmtpStatus(result.isSuccess ? "success" : "error");
+    setSmtpError(null);
+
+    const result = await pingSmtpServerAction();
+    if (result.isSuccess) {
+      setSmtpStatus("success");
       setLastPingTime(new Date());
-    } catch (error) {
+    } else {
       setSmtpStatus("error");
+      setSmtpError(result.error);
       setLastPingTime(new Date());
     }
   };
@@ -75,7 +79,6 @@ export default function MailTesterForm({ smtpInfo }: MailTesterFormProps) {
   }, []);
 
   const onSubmit = async (data: EmailFormData) => {
-    console.log("teste");
     setIsSubmitting(true);
     const result = await sendTestEmailAction(data);
 
@@ -264,6 +267,14 @@ export default function MailTesterForm({ smtpInfo }: MailTesterFormProps) {
                   <div className="text-xs text-muted-foreground">
                     Last checked: {lastPingTime.toLocaleTimeString()}
                   </div>
+                )}
+                {smtpStatus === "error" && smtpError && (
+                  <Alert variant="destructive" className="py-2 mt-2">
+                    <XCircle className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                      {smtpError}
+                    </AlertDescription>
+                  </Alert>
                 )}
               </div>
             </div>

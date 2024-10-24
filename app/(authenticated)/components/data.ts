@@ -108,7 +108,7 @@ export const navigationData: NavigationData = {
           url: "/admin/mail",
         },
       ],
-      // roles: [RoleType.Admin],
+      roles: [RoleType.Admin],
     },
   ],
   navSecondary: [
