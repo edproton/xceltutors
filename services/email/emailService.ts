@@ -90,24 +90,23 @@ export async function pingSmtp(): Promise<{
 const createTransporter = (): Transporter => {
   return nodemailer.createTransport({
     host: HOST,
-    port: PORT,
-    secure: true, // use SSL
+    port: 465,
+    secure: true,
     auth: {
-      user: env.EMAIL_USER,
-      pass: env.EMAIL_PASSWORD,
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASSWORD,
     },
-    // Add production optimizations
-    pool: true,
-    maxConnections: 5,
-    maxMessages: 100,
-    // Add timeouts
-    connectionTimeout: 10000,
+    connectionTimeout: 10000, // 10 seconds
     greetingTimeout: 10000,
     socketTimeout: 10000,
-    // Debug settings
-    debug: process.env.NODE_ENV !== "production",
-    logger: process.env.NODE_ENV !== "production",
-  } as TransportOptions);
+    debug: true, // Enable debug logging
+    logger: true, // Enable logging
+    tls: {
+      rejectUnauthorized: true,
+      timeout: 10000,
+      servername: HOST,
+    },
+  });
 };
 
 export async function sendEmail({
