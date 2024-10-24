@@ -108,7 +108,7 @@ export async function middleware(request: NextRequest) {
 
     try {
       const sessionResponse = await fetch(
-        `http://localhost:3000/api/auth/validate-session`,
+        `http://host.docker.internal:3000/api/auth/validate-session`,
         {
           headers: {
             Cookie: `session=${sessionToken}`,
