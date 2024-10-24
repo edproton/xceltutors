@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import {
@@ -54,6 +54,8 @@ import { navigationData } from "./data";
 import { RoleType } from "@/db/schemas/roleSchema";
 import { useUser } from "@/providers/user-provider";
 import { UserRoles } from "../dashboard/actions";
+import { logoutAction } from "./actions";
+import ErrorDialog from "@/components/ui/error-dialog";
 
 interface CustomSidebarProps {
   children: React.ReactNode;
@@ -215,7 +217,16 @@ const CustomSidebarMenu = ({ roles }: { roles: UserRoles }) => {
 export default function CustomSidebar({ children }: CustomSidebarProps) {
   const { theme, setTheme } = useTheme();
   const { user, roles } = useUser();
+  const router = useRouter();
 
+  const handleLogout = async () => {
+    const result = await logoutAction();
+    if (result.isSuccess) {
+      router.push("/auth/signin");
+    } else {
+      return <ErrorDialog error={result.error} />;
+    }
+  };
   const { picture, email } = user;
   const name = `${user.firstName} ${user.lastName}`;
 
@@ -299,7 +310,7 @@ export default function CustomSidebar({ children }: CustomSidebarProps) {
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onSelect={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
                   </DropdownMenuItem>

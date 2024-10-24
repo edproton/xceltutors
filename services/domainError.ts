@@ -5,6 +5,9 @@ export class DomainError extends Error {
 }
 
 export const Errors = {
+  Validation: {
+    InvalidInput: "VALIDATION_INVALID_INPUT",
+  },
   User: {
     NotFound: "USER_NOT_FOUND",
     EmailAlreadyExists: "USER_EMAIL_ALREADY_EXISTS",

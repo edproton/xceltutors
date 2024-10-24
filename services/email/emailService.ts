@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import { env } from "@/lib/env";
 import { Transporter, TransportOptions, SendMailOptions } from "nodemailer";
+import { SmtpServerInfo } from "./types";
 
 interface EmailError extends Error {
   code?: string;
@@ -22,11 +23,74 @@ interface EmailResult {
   error?: string;
 }
 
+const HOST = "smtp.zoho.eu";
+const PORT = 465;
+export async function getSmtpServerInfo(): Promise<SmtpServerInfo> {
+  // Simply return the hardcoded configuration
+  return {
+    host: HOST,
+    port: PORT,
+    secure: true, // Since port is 465, this is typically true for SSL
+  };
+}
+
+export async function pingSmtp(): Promise<{
+  success: boolean;
+  message: string;
+}> {
+  const transporter = createTransporter();
+
+  try {
+    // Attempt to verify the connection configuration
+    await transporter.verify();
+
+    return {
+      success: true,
+      message: "SMTP server is reachable and properly configured",
+    };
+  } catch (error) {
+    const emailError = error as EmailError;
+
+    console.error("SMTP ping failed:", {
+      error: emailError.message,
+      code: emailError.code,
+      command: emailError.command,
+      response: emailError.response,
+      responseCode: emailError.responseCode,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Return specific error messages based on the error type
+    if (emailError.code === "ECONNECTION" || emailError.code === "ETIMEDOUT") {
+      return {
+        success: false,
+        message:
+          "Unable to connect to SMTP server: Connection failed or timed out",
+      };
+    }
+
+    if (emailError.code === "EAUTH") {
+      return {
+        success: false,
+        message: "SMTP authentication failed: Invalid credentials",
+      };
+    }
+
+    // Generic error message for other cases
+    return {
+      success: false,
+      message: `SMTP server check failed: ${emailError.message}`,
+    };
+  } finally {
+    transporter.close();
+  }
+}
+
 // Create reusable transporter with better configuration
 const createTransporter = (): Transporter => {
   return nodemailer.createTransport({
-    host: "smtp.zoho.eu",
-    port: 465,
+    host: HOST,
+    port: PORT,
     secure: true, // use SSL
     auth: {
       user: env.EMAIL_USER,
