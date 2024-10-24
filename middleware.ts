@@ -92,7 +92,6 @@ export async function middleware(request: NextRequest) {
 
   // 1. Early returns for special routes
   if (isAuthProviderRoute(pathname)) {
-    // For OAuth routes, don't add any middleware processing
     return NextResponse.next();
   }
 
@@ -147,18 +146,57 @@ export async function middleware(request: NextRequest) {
   }
 
   // 4. Protected Routes Handling
+  if (isAdminRoute(pathname)) {
+    if (!sessionToken) {
+      // If no session, redirect to sign in
+      return createSignInRedirect(
+        request,
+        Errors.Auth.Unauthenticated,
+        pathname
+      );
+    }
 
-  // Admin routes without session show 404
-  if (isAdminRoute(pathname) && !sessionToken) {
-    return NextResponse.rewrite(new URL("/not-found", request.url));
+    // If has session, validate it first
+    try {
+      const sessionResponse = await fetch(
+        `${getServiceUrl(request)}/api/auth/validate-session`,
+        {
+          headers: {
+            Cookie: `session=${sessionToken}`,
+          },
+        }
+      );
+
+      if (!sessionResponse.ok) {
+        return createSignInRedirect(
+          request,
+          Errors.Auth.Unauthenticated,
+          pathname
+        );
+      }
+
+      const sessionData = (await sessionResponse.json()) as SessionData;
+
+      // Show 404 if user is authenticated but not an admin
+      if (!sessionData.roles.some((role) => role.name === RoleType.Admin)) {
+        return NextResponse.rewrite(new URL("/not-found", request.url));
+      }
+    } catch (error) {
+      console.error("Admin route session validation error:", error);
+      return createSignInRedirect(
+        request,
+        Errors.Server.InternalError,
+        pathname
+      );
+    }
   }
 
-  // Other protected routes redirect to login
+  // Other protected routes redirect to login if no session
   if (!sessionToken) {
     return createSignInRedirect(request, Errors.Auth.Unauthenticated, pathname);
   }
 
-  // 5. Session Validation
+  // 5. Session Validation for all other routes
   try {
     const sessionResponse = await fetch(
       `${getServiceUrl(request)}/api/auth/validate-session`,
@@ -172,16 +210,6 @@ export async function middleware(request: NextRequest) {
     if (!sessionResponse.ok) {
       const errorData = await sessionResponse.json();
       return createSignInRedirect(request, errorData.type, pathname);
-    }
-
-    const sessionData = (await sessionResponse.json()) as SessionData;
-
-    // Admin role check
-    if (
-      isAdminRoute(pathname) &&
-      !sessionData.roles.some((role) => role.name === RoleType.Admin)
-    ) {
-      return NextResponse.rewrite(new URL("/not-found", request.url));
     }
 
     // Session extension on GET requests
@@ -200,11 +228,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   } catch (error) {
     console.error("Session validation error:", error);
-
-    if (isAdminRoute(pathname)) {
-      return NextResponse.rewrite(new URL("/not-found", request.url));
-    }
-
     return createSignInRedirect(request, Errors.Server.InternalError, pathname);
   }
 }
