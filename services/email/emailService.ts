@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 import { env } from "@/lib/env";
-import { Transporter, TransportOptions, SendMailOptions } from "nodemailer";
+import { Transporter, SendMailOptions } from "nodemailer";
 import { SmtpServerInfo } from "./types";
 
 interface EmailError extends Error {
@@ -24,13 +24,12 @@ interface EmailResult {
 }
 
 const HOST = "smtp.zoho.eu";
-const PORT = 465;
+const PORT = 587;
 export async function getSmtpServerInfo(): Promise<SmtpServerInfo> {
-  // Simply return the hardcoded configuration
   return {
     host: HOST,
     port: PORT,
-    secure: true, // Since port is 465, this is typically true for SSL
+    secure: false, // Changed to false for STARTTLS
   };
 }
 
@@ -90,22 +89,25 @@ export async function pingSmtp(): Promise<{
 const createTransporter = (): Transporter => {
   return nodemailer.createTransport({
     host: HOST,
-    port: 465,
-    secure: true,
+    port: PORT,
+    secure: false, // Changed to false for STARTTLS
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASSWORD,
     },
-    connectionTimeout: 10000, // 10 seconds
+    connectionTimeout: 10000,
     greetingTimeout: 10000,
     socketTimeout: 10000,
-    debug: true, // Enable debug logging
-    logger: true, // Enable logging
+    debug: true,
+    logger: true,
     tls: {
       rejectUnauthorized: true,
       timeout: 10000,
       servername: HOST,
+      ciphers: "SSLv3", // Added for better compatibility
+      minVersion: "TLSv1.2", // Added for security
     },
+    requireTLS: true, // Added to ensure TLS is used
   });
 };
 
