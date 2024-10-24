@@ -92,8 +92,8 @@ const createTransporter = (): Transporter => {
     port: PORT,
     secure: false, // Changed to false for STARTTLS
     auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASSWORD,
+      user: env.EMAIL_USER,
+      pass: env.EMAIL_PASSWORD,
     },
     connectionTimeout: 10000,
     greetingTimeout: 10000,
