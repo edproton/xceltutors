@@ -24,7 +24,7 @@ interface EmailResult {
 }
 
 const HOST = "smtp.zoho.eu";
-const PORT = 465;
+const PORT = 587;
 export async function getSmtpServerInfo(): Promise<SmtpServerInfo> {
   // Simply return the hardcoded configuration
   return {
