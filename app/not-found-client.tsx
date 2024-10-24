@@ -89,17 +89,14 @@ const NotFoundClient = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
     return () => clearInterval(animationInterval);
   }, [isLoggedIn, isDrawing]);
 
-  // Theme effect
   useEffect(() => {
     setStrokeColor(theme === "dark" ? "#ffffff" : "#000000");
     setLightness(theme === "dark" ? 80 : 50);
   }, [theme]);
 
-  // Drawing setup
   useEffect(() => {
     setMounted(true);
 
-    // Only set up drawing events on non-mobile devices
     if (!isMobile) {
       const handleMouseMove = (e: MouseEvent) => {
         mouseX.set(e.clientX);
@@ -145,7 +142,6 @@ const NotFoundClient = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
     }
   }, [isDrawing, mouseX, mouseY, currentPath, strokeColor, isMobile]);
 
-  // Color conversion helpers
   const hexToHSL = (hex: string): { h: number; s: number; l: number } => {
     hex = hex.replace(/^#/, "");
     const r = parseInt(hex.slice(0, 2), 16) / 255;
@@ -188,7 +184,6 @@ const NotFoundClient = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
     return `#${f(0)}${f(8)}${f(4)}`;
   };
 
-  // Color effect
   useEffect(() => {
     const { h, s, l } = hexToHSL(strokeColor);
     setHue(h);
@@ -220,12 +215,89 @@ const NotFoundClient = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
   };
 
   const buttonVariants = {
-    initial: { scale: 1 },
-    hover: { scale: 1.05 },
-    tap: { scale: 0.98 },
+    initial: {
+      scale: 1,
+      transition: {
+        type: "spring",
+        stiffness: 200,
+        damping: 15,
+      },
+    },
+    hover: {
+      scale: 1.05,
+      transition: {
+        type: "spring",
+        stiffness: 200,
+        damping: 15,
+      },
+    },
+    tap: {
+      scale: 0.98,
+      transition: {
+        type: "spring",
+        stiffness: 200,
+        damping: 15,
+      },
+    },
     pulse: {
       scale: [1, 1.05, 1],
-      transition: { duration: 2, ease: "easeInOut", times: [0, 0.5, 1] },
+      transition: {
+        duration: 2,
+        ease: "easeInOut",
+        times: [0, 0.5, 1],
+      },
+    },
+  };
+
+  const footerButtonVariants = {
+    initial: {
+      scale: 1,
+      transition: {
+        type: "spring",
+        stiffness: 200,
+        damping: 15,
+      },
+    },
+    hover: {
+      scale: 1.1,
+      transition: {
+        type: "spring",
+        stiffness: 400,
+        damping: 10,
+      },
+    },
+    tap: {
+      scale: 0.95,
+      transition: {
+        type: "spring",
+        stiffness: 400,
+        damping: 10,
+      },
+    },
+  };
+
+  const footerContainerVariants = {
+    initial: {
+      y: 100,
+      opacity: 0,
+    },
+    animate: {
+      y: 0,
+      opacity: 1,
+      scale: 1,
+      transition: {
+        duration: 0.4,
+        ease: "easeOut",
+        delay: 1,
+      },
+    },
+    hover: {
+      scale: 1.05,
+      transition: {
+        type: "tween",
+        duration: 0.3,
+        ease: "easeOut",
+      },
     },
   };
 
@@ -258,7 +330,6 @@ const NotFoundClient = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
         </svg>
       )}
 
-      {/* Animated subjects */}
       {subjects.map((Subject, i) => (
         <motion.div
           key={i}
@@ -287,7 +358,6 @@ const NotFoundClient = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
         </motion.div>
       ))}
 
-      {/* Main content */}
       <motion.div
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
@@ -315,7 +385,6 @@ const NotFoundClient = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
         Oops! This page took a coffee break and forgot to come back.
       </motion.p>
 
-      {/* Action buttons */}
       <motion.div
         className="flex flex-col sm:flex-row gap-4 mt-6 md:mt-8 w-full max-w-md px-4"
         initial={{ scale: 0 }}
@@ -330,8 +399,18 @@ const NotFoundClient = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
           whileTap="tap"
           className="relative flex-1"
         >
-          <Button asChild variant="default" className="w-full">
-            <Link href="/">Return to Tutor Search</Link>
+          <Button asChild variant="default" className="relative w-full">
+            <Link href="/">
+              Return to Tutor Search
+              {isHomeButtonPulsing && (
+                <motion.span
+                  className="absolute inset-0 rounded-md bg-primary"
+                  initial={{ scale: 1, opacity: 0.25 }}
+                  animate={{ scale: 1.5, opacity: 0 }}
+                  transition={{ duration: 2 }}
+                />
+              )}
+            </Link>
           </Button>
         </motion.div>
 
@@ -344,14 +423,23 @@ const NotFoundClient = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
             whileTap="tap"
             className="relative flex-1"
           >
-            <Button asChild variant="outline" className="w-full">
-              <Link href="/dashboard">Go to Dashboard</Link>
+            <Button asChild variant="outline" className="relative w-full">
+              <Link href="/dashboard">
+                Go to Dashboard
+                {isDashboardButtonPulsing && (
+                  <motion.span
+                    className="absolute inset-0 rounded-md bg-primary"
+                    initial={{ scale: 1, opacity: 0.25 }}
+                    animate={{ scale: 1.5, opacity: 0 }}
+                    transition={{ duration: 2 }}
+                  />
+                )}
+              </Link>
             </Button>
           </motion.div>
         )}
       </motion.div>
 
-      {/* Background 404 */}
       <motion.div
         className="absolute text-6xl md:text-9xl font-bold text-primary/5 dark:text-primary/10 select-none"
         initial={{ y: -100 }}
@@ -361,26 +449,56 @@ const NotFoundClient = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
         404
       </motion.div>
 
-      {/* Footer tools - Only show on non-mobile devices */}
       {!isMobile && (
-        <motion.div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 flex items-center justify-center bg-background/80 dark:bg-background/90 backdrop-blur-sm p-2 rounded-lg shadow-lg max-w-3xl w-full border border-border">
-          <div className="flex items-center justify-center space-x-4 w-full">
-            <div className="flex items-center justify-center space-x-4">
+        <motion.div
+          className="fixed bottom-4 left-0 right-0 mx-auto flex items-center justify-center bg-background/80 dark:bg-background/90 px-2 py-1.5 rounded-lg shadow-lg max-w-xl border border-border"
+          variants={footerContainerVariants}
+          initial="initial"
+          animate="animate"
+          whileHover="hover"
+          style={{
+            transformOrigin: "center",
+            willChange: "transform",
+            transform: "translateZ(0)",
+          }}
+          transition={{
+            scale: {
+              type: "tween",
+              duration: 0.5,
+              ease: "easeOut",
+            },
+          }}
+        >
+          <div className="flex items-center space-x-2 w-full">
+            <div className="flex items-center space-x-2">
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    style={{ backgroundColor: strokeColor }}
-                    className="shadow-md"
+                  <motion.div
+                    variants={footerButtonVariants}
+                    initial="initial"
+                    whileHover="hover"
+                    whileTap="tap"
                   >
-                    <Pencil
-                      className="h-4 w-4"
-                      style={{
-                        color: theme === "dark" ? "#000000" : "#ffffff",
-                      }}
-                    />
-                  </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      style={{ backgroundColor: strokeColor }}
+                      className="shadow-md relative overflow-hidden"
+                    >
+                      <Pencil
+                        className="h-4 w-4"
+                        style={{
+                          color: theme === "dark" ? "#000000" : "#ffffff",
+                        }}
+                      />
+                      <motion.div
+                        className="absolute inset-0 bg-primary/10"
+                        initial={{ scale: 0, opacity: 0 }}
+                        whileHover={{ scale: 1.5, opacity: 1 }}
+                        transition={{ duration: 0.3 }}
+                      />
+                    </Button>
+                  </motion.div>
                 </PopoverTrigger>
                 <PopoverContent className="w-80">
                   <div className="space-y-4">
@@ -388,10 +506,12 @@ const NotFoundClient = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
                       <Label className="text-sm font-medium">
                         Color Preview
                       </Label>
-                      <div
+                      <motion.div
                         className="w-full h-12 rounded-md shadow-inner cursor-pointer"
                         style={{ backgroundColor: strokeColor }}
                         onClick={handleColorPreviewClick}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                       />
                       <input
                         ref={colorPickerRef}
@@ -470,13 +590,19 @@ const NotFoundClient = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
                 variant="outline"
                 size="icon"
                 onClick={clearBoard}
-                className="shadow-md"
+                className="shadow-md relative overflow-hidden"
               >
                 <Eraser className="h-4 w-4" />
+                <motion.div
+                  className="absolute inset-0 bg-primary/10"
+                  initial={{ scale: 0, opacity: 0 }}
+                  whileHover={{ scale: 1.5, opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                />
               </Button>
             </div>
 
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground whitespace-nowrap">
               Tip: Who said 404 pages can't be your canvas? Unleash your inner
               Picasso!
             </p>
@@ -484,11 +610,18 @@ const NotFoundClient = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
         </motion.div>
       )}
 
-      {/* Rotating pencil - Only show on non-mobile devices */}
       {!isMobile && (
         <motion.div
           className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-50"
           style={{ rotate: angle }}
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{
+            delay: 1.2,
+            type: "spring",
+            stiffness: 200,
+            damping: 15,
+          }}
         >
           <Pencil className="h-8 w-8 md:h-12 md:w-12 text-primary" />
         </motion.div>
