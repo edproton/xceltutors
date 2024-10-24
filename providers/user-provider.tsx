@@ -1,6 +1,6 @@
 "use client";
 
-import { SessionData } from "@/app/(authenticated)/dashboard/actions";
+import { SessionData } from "@/app/(authenticated)/dashboard/types";
 import { createContext, useContext } from "react";
 
 type UserContextType = {

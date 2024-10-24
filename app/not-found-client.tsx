@@ -24,50 +24,232 @@ import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { useTheme } from "next-themes";
 
+// Types
+interface WindowSize {
+  width: number;
+  height: number;
+}
+
+interface Path {
+  path: string;
+  color: string;
+}
+
+// Color conversion utilities
+const hexToHSL = (hex: string): { h: number; s: number; l: number } => {
+  hex = hex.replace(/^#/, "");
+  const r = parseInt(hex.slice(0, 2), 16) / 255;
+  const g = parseInt(hex.slice(2, 4), 16) / 255;
+  const b = parseInt(hex.slice(4, 6), 16) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r:
+        h = (g - b) / d + (g < b ? 6 : 0);
+        break;
+      case g:
+        h = (b - r) / d + 2;
+        break;
+      case b:
+        h = (r - g) / d + 4;
+        break;
+    }
+    h /= 6;
+  }
+  return { h: h * 360, s: s * 100, l: l * 100 };
+};
+
+const hslToHex = (h: number, s: number, l: number): string => {
+  l /= 100;
+  const a = (s * Math.min(l, 1 - l)) / 100;
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12;
+    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * color)
+      .toString(16)
+      .padStart(2, "0");
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+};
+
+// Animation variants
+const buttonVariants = {
+  initial: {
+    scale: 1,
+    transition: { type: "spring", stiffness: 200, damping: 15 },
+  },
+  hover: {
+    scale: 1.05,
+    transition: { type: "spring", stiffness: 200, damping: 15 },
+  },
+  tap: {
+    scale: 0.98,
+    transition: { type: "spring", stiffness: 200, damping: 15 },
+  },
+  pulse: {
+    scale: [1, 1.05, 1],
+    transition: { duration: 2, ease: "easeInOut", times: [0, 0.5, 1] },
+  },
+};
+
+const footerButtonVariants = {
+  initial: {
+    scale: 1,
+    transition: { type: "spring", stiffness: 200, damping: 15 },
+  },
+  hover: {
+    scale: 1.1,
+    transition: { type: "spring", stiffness: 400, damping: 10 },
+  },
+  tap: {
+    scale: 0.95,
+    transition: { type: "spring", stiffness: 400, damping: 10 },
+  },
+};
+
+const footerContainerVariants = {
+  initial: { y: 100, opacity: 0 },
+  animate: {
+    y: 0,
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.4, ease: "easeOut", delay: 1 },
+  },
+  hover: {
+    scale: 1.05,
+    transition: { type: "tween", duration: 0.3, ease: "easeOut" },
+  },
+};
+
 const NotFoundClient = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
+  // Theme and mounting
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
+
+  // Drawing state
   const [isDrawing, setIsDrawing] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [paths, setPaths] = useState<Array<{ path: string; color: string }>>(
-    []
-  );
+  const [paths, setPaths] = useState<Path[]>([]);
   const [currentPath, setCurrentPath] = useState("");
-  const [strokeColor, setStrokeColor] = useState(
-    theme === "dark" ? "#ffffff" : "#000000"
-  );
-  const [hue, setHue] = useState(0);
-  const [saturation, setSaturation] = useState(100);
-  const [lightness, setLightness] = useState(theme === "dark" ? 80 : 50);
-  const svgRef = useRef<SVGSVGElement>(null);
-  const colorPickerRef = useRef<HTMLInputElement>(null);
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  const angle = useTransform([mouseX, mouseY], (latest: number[]) => {
-    const [x, y] = latest;
-    return (
-      Math.atan2(y - window.innerHeight / 2, x - window.innerWidth / 2) *
-      (180 / Math.PI)
-    );
+
+  // Window size state
+  const [windowSize, setWindowSize] = useState<WindowSize>({
+    width: 0,
+    height: 0,
   });
 
+  // Color state
+  const [strokeColor, setStrokeColor] = useState("#000000");
+  const [hue, setHue] = useState(0);
+  const [saturation, setSaturation] = useState(100);
+  const [lightness, setLightness] = useState(50);
+
+  // Refs
+  const svgRef = useRef<SVGSVGElement>(null);
+  const colorPickerRef = useRef<HTMLInputElement>(null);
+
+  // Motion values
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  // Button animation state
   const [isHomeButtonPulsing, setIsHomeButtonPulsing] = useState(false);
   const [isDashboardButtonPulsing, setIsDashboardButtonPulsing] =
     useState(false);
 
-  // Check for mobile device
+  // Initialize window-dependent values after mount
   useEffect(() => {
-    const checkMobile = () => {
+    setMounted(true);
+    setStrokeColor(theme === "dark" ? "#ffffff" : "#000000");
+    setLightness(theme === "dark" ? 80 : 50);
+
+    const updateWindowSize = () => {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
       setIsMobile(window.innerWidth < 768);
     };
 
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+    updateWindowSize();
+    window.addEventListener("resize", updateWindowSize);
+    return () => window.removeEventListener("resize", updateWindowSize);
+  }, [theme]);
 
-  // Button animations setup
+  // Calculate pencil angle
+  const angle = useTransform([mouseX, mouseY], (latest: number[]) => {
+    if (!mounted) return 0;
+    const [x, y] = latest;
+    return (
+      Math.atan2(y - windowSize.height / 2, x - windowSize.width / 2) *
+      (180 / Math.PI)
+    );
+  });
+
+  // Drawing event handlers
   useEffect(() => {
+    if (!mounted || isMobile) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseX.set(e.clientX);
+      mouseY.set(e.clientY);
+      if (isDrawing && svgRef.current) {
+        const svgRect = svgRef.current.getBoundingClientRect();
+        const x = e.clientX - svgRect.left;
+        const y = e.clientY - svgRect.top;
+        setCurrentPath((prev) => `${prev} L${x} ${y}`);
+      }
+    };
+
+    const handleMouseDown = (e: MouseEvent) => {
+      if (svgRef.current) {
+        const svgRect = svgRef.current.getBoundingClientRect();
+        const x = e.clientX - svgRect.left;
+        const y = e.clientY - svgRect.top;
+        setCurrentPath(`M${x} ${y}`);
+        setIsDrawing(true);
+      }
+    };
+
+    const handleMouseUp = () => {
+      if (isDrawing) {
+        setPaths((prev) => [
+          ...prev,
+          { path: currentPath, color: strokeColor },
+        ]);
+        setCurrentPath("");
+        setIsDrawing(false);
+      }
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mousedown", handleMouseDown);
+    window.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mousedown", handleMouseDown);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [mounted, isDrawing, mouseX, mouseY, currentPath, strokeColor, isMobile]);
+
+  const handleColorPreviewClick = () => {
+    if (colorPickerRef.current) {
+      colorPickerRef.current.click();
+    }
+  };
+
+  // Button animations
+  useEffect(() => {
+    if (!mounted) return;
+
     const triggerButtonAnimations = () => {
       const randomButton = Math.random();
 
@@ -87,117 +269,15 @@ const NotFoundClient = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
     }, 10000);
 
     return () => clearInterval(animationInterval);
-  }, [isLoggedIn, isDrawing]);
+  }, [mounted, isLoggedIn, isDrawing]);
 
-  useEffect(() => {
-    setStrokeColor(theme === "dark" ? "#ffffff" : "#000000");
-    setLightness(theme === "dark" ? 80 : 50);
-  }, [theme]);
-
-  useEffect(() => {
-    setMounted(true);
-
-    if (!isMobile) {
-      const handleMouseMove = (e: MouseEvent) => {
-        mouseX.set(e.clientX);
-        mouseY.set(e.clientY);
-        if (isDrawing && svgRef.current) {
-          const svgRect = svgRef.current.getBoundingClientRect();
-          const x = e.clientX - svgRect.left;
-          const y = e.clientY - svgRect.top;
-          setCurrentPath((prev) => `${prev} L${x} ${y}`);
-        }
-      };
-
-      const handleMouseDown = (e: MouseEvent) => {
-        if (svgRef.current) {
-          const svgRect = svgRef.current.getBoundingClientRect();
-          const x = e.clientX - svgRect.left;
-          const y = e.clientY - svgRect.top;
-          setCurrentPath(`M${x} ${y}`);
-          setIsDrawing(true);
-        }
-      };
-
-      const handleMouseUp = () => {
-        if (isDrawing) {
-          setPaths((prev) => [
-            ...prev,
-            { path: currentPath, color: strokeColor },
-          ]);
-          setCurrentPath("");
-          setIsDrawing(false);
-        }
-      };
-
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mousedown", handleMouseDown);
-      window.addEventListener("mouseup", handleMouseUp);
-
-      return () => {
-        window.removeEventListener("mousemove", handleMouseMove);
-        window.removeEventListener("mousedown", handleMouseDown);
-        window.removeEventListener("mouseup", handleMouseUp);
-      };
-    }
-  }, [isDrawing, mouseX, mouseY, currentPath, strokeColor, isMobile]);
-
-  const hexToHSL = (hex: string): { h: number; s: number; l: number } => {
-    hex = hex.replace(/^#/, "");
-    const r = parseInt(hex.slice(0, 2), 16) / 255;
-    const g = parseInt(hex.slice(2, 4), 16) / 255;
-    const b = parseInt(hex.slice(4, 6), 16) / 255;
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    let h = 0;
-    let s = 0;
-    const l = (max + min) / 2;
-    if (max !== min) {
-      const d = max - min;
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-      switch (max) {
-        case r:
-          h = (g - b) / d + (g < b ? 6 : 0);
-          break;
-        case g:
-          h = (b - r) / d + 2;
-          break;
-        case b:
-          h = (r - g) / d + 4;
-          break;
-      }
-      h /= 6;
-    }
-    return { h: h * 360, s: s * 100, l: l * 100 };
-  };
-
-  const hslToHex = (h: number, s: number, l: number): string => {
-    l /= 100;
-    const a = (s * Math.min(l, 1 - l)) / 100;
-    const f = (n: number) => {
-      const k = (n + h / 30) % 12;
-      const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-      return Math.round(255 * color)
-        .toString(16)
-        .padStart(2, "0");
-    };
-    return `#${f(0)}${f(8)}${f(4)}`;
-  };
-
-  useEffect(() => {
-    const { h, s, l } = hexToHSL(strokeColor);
-    setHue(h);
-    setSaturation(s);
-    setLightness(l);
-  }, [strokeColor]);
-
-  if (!mounted) return null;
-
+  // Clear drawing board
   const clearBoard = () => {
     setPaths([]);
     setCurrentPath("");
   };
 
+  // Subjects for floating icons
   const subjects = [
     { icon: Book, color: "text-primary" },
     { icon: Calculator, color: "text-accent" },
@@ -208,98 +288,9 @@ const NotFoundClient = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
     { icon: Glasses, color: "text-muted-foreground" },
   ];
 
-  const handleColorPreviewClick = () => {
-    if (colorPickerRef.current) {
-      colorPickerRef.current.click();
-    }
-  };
-
-  const buttonVariants = {
-    initial: {
-      scale: 1,
-      transition: {
-        type: "spring",
-        stiffness: 200,
-        damping: 15,
-      },
-    },
-    hover: {
-      scale: 1.05,
-      transition: {
-        type: "spring",
-        stiffness: 200,
-        damping: 15,
-      },
-    },
-    tap: {
-      scale: 0.98,
-      transition: {
-        type: "spring",
-        stiffness: 200,
-        damping: 15,
-      },
-    },
-    pulse: {
-      scale: [1, 1.05, 1],
-      transition: {
-        duration: 2,
-        ease: "easeInOut",
-        times: [0, 0.5, 1],
-      },
-    },
-  };
-
-  const footerButtonVariants = {
-    initial: {
-      scale: 1,
-      transition: {
-        type: "spring",
-        stiffness: 200,
-        damping: 15,
-      },
-    },
-    hover: {
-      scale: 1.1,
-      transition: {
-        type: "spring",
-        stiffness: 400,
-        damping: 10,
-      },
-    },
-    tap: {
-      scale: 0.95,
-      transition: {
-        type: "spring",
-        stiffness: 400,
-        damping: 10,
-      },
-    },
-  };
-
-  const footerContainerVariants = {
-    initial: {
-      y: 100,
-      opacity: 0,
-    },
-    animate: {
-      y: 0,
-      opacity: 1,
-      scale: 1,
-      transition: {
-        duration: 0.4,
-        ease: "easeOut",
-        delay: 1,
-      },
-    },
-    hover: {
-      scale: 1.05,
-      transition: {
-        type: "tween",
-        duration: 0.3,
-        ease: "easeOut",
-      },
-    },
-  };
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <div className="relative flex flex-col items-center justify-center min-h-screen overflow-hidden bg-background text-foreground p-4 select-none">
@@ -603,8 +594,9 @@ const NotFoundClient = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
             </div>
 
             <p className="text-sm text-muted-foreground whitespace-nowrap">
-              Tip: Who said 404 pages can't be your canvas? Unleash your inner
-              Picasso!
+              {
+                "Tip: Who said 404 pages can't be your canvas? Unleash your inner Picasso!"
+              }
             </p>
           </div>
         </motion.div>
